@@ -1,0 +1,24 @@
+# Syntax Coloring Map for DFPongController
+
+# Datatypes (KEYWORD1)
+DFPongController	KEYWORD1
+
+# Methods and Functions (KEYWORD2)
+setControllerNumber	KEYWORD2
+setStatusLED	KEYWORD2
+setDebug	KEYWORD2
+setRSSIThreshold	KEYWORD2
+begin	KEYWORD2
+update	KEYWORD2
+sendControl	KEYWORD2
+isConnected	KEYWORD2
+isReady	KEYWORD2
+getRSSI	KEYWORD2
+hasStrongSignal	KEYWORD2
+getControllerNumber	KEYWORD2
+getServiceUUID	KEYWORD2
+
+# Constants (LITERAL1)
+NEUTRAL	LITERAL1
+UP	LITERAL1
+DOWN	LITERAL1
