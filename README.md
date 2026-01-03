@@ -1,6 +1,6 @@
 # DFPongController
 
-A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) controllers that connect to the [DF Pong](https://digitalfuturesocadu.github.io/df-pong/) browser game.
+A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) controllers that connect to the [DF Pong](https://github.com/DigitalFuturesOCADU/df-pong) browser game.
 
 ![Arduino](https://img.shields.io/badge/Arduino-Compatible-00979D?logo=arduino)
 ![License](https://img.shields.io/badge/License-MIT-green)
