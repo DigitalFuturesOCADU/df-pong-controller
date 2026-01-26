@@ -16,6 +16,24 @@ A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) cont
 
 **Note:** ESP32-S2 does not have Bluetooth and is not supported.
 
+## Supported Browsers
+
+The DF Pong game uses the [Web Bluetooth API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Bluetooth_API), which has limited browser support.
+
+| Browser | Desktop | Mobile |
+|---------|---------|--------|
+| Chrome | ✅ Supported | ✅ Android only |
+| Edge | ✅ Supported | ✅ Android only |
+| Opera | ✅ Supported | ✅ Android only |
+| Safari | ❌ Not supported | ❌ Not supported |
+| Firefox | ❌ Not supported | ❌ Not supported |
+| iOS (all browsers) | ❌ Not supported | ❌ Not supported |
+
+**Important Notes:**
+- **iOS devices** (iPhone/iPad) do not support Web Bluetooth in any browser, including Chrome
+- **Use Chrome on desktop** for the most reliable experience
+- On Android, use Chrome, Edge, or Opera
+
 ## Installation
 
 ### Step 1: Install the Library
@@ -24,7 +42,7 @@ A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) cont
 1. Open Arduino IDE
 2. Go to **Sketch > Include Library > Manage Libraries...**
 3. Search for **"DFPongController"**
-4. Click **Install**
+4. Click **Install With Dependencies**
 
 #### Manual Installation
 1. Download this repository as a ZIP
@@ -201,8 +219,18 @@ Make sure you installed the NimBLE-Arduino library:
 
 ## Examples
 
-- **StartTemplate** - Template with commented structure for creating your own controller
-- **SimpleDigital** - Working example with two physical buttons
+The library includes several examples to help you get started, from basic templates to creative control schemes:
+
+| Example | Description |
+|---------|-------------|
+| **00_StartTemplate** | Empty template with commented structure for creating your own custom controller |
+| **01_SimpleDigital** | Basic two-button controller - paddle moves while buttons are held |
+| **02_ClickDetection** | Tap-based control - paddle moves once per click instead of continuous hold |
+| **03_ChordedInputs** | Use button combinations (chords) for multiple controls with fewer buttons |
+| **04_GravityClick** | Flappy Bird-style control - click to go up, gravity pulls you down |
+| **05_SlotMachine** | Chaotic controller where buttons only work a percentage of the time |
+
+Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 
 ## Links
 
