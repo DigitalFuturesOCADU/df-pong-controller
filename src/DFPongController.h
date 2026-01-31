@@ -216,6 +216,8 @@ private:
     int _lastSentValue;
     bool _valueChanged;
     bool _deviceConnected;
+    bool _controlCalledThisLoop;      // Track if sendControl was called this loop
+    bool _controlCalledPreviousLoop;  // Track if sendControl was called last loop
     
     // Timing
     unsigned long _lastLedToggle;

@@ -65,7 +65,7 @@ class DFPongController::CharacteristicCallbacks : public NimBLECharacteristicCal
         
         uint8_t value = pCharacteristic->getValue()[0];
         
-        if (value == HANDSHAKE) {
+        if (value == HANDSHAKE && !DFPongController::_instance->_handshakeComplete) {
             DFPongController::_instance->_handshakeComplete = true;
             DFPongController::_instance->debugPrint("Handshake complete!");
             Serial.println("Controller ready to play!");
@@ -98,6 +98,8 @@ DFPongController::DFPongController() {
     _ledState = false;
     _lastSentValue = 0;
     _valueChanged = false;
+    _controlCalledThisLoop = false;
+    _controlCalledPreviousLoop = true;  // Start true to avoid sending NEUTRAL on first loop
     
     _lastLedToggle = 0;
     _lastNotificationTime = 0;
@@ -217,9 +219,7 @@ bool DFPongController::begin(const char* deviceName) {
     // Configure advertising
     _pAdvertising = NimBLEDevice::getAdvertising();
     _pAdvertising->addServiceUUID(_serviceUuid);
-    _pAdvertising->setScanResponse(true);
-    _pAdvertising->setMinPreferred(0x06);  // For iPhone compatibility
-    _pAdvertising->setMaxPreferred(0x12);
+    _pAdvertising->enableScanResponse(true);
     
     // Start advertising
     NimBLEDevice::startAdvertising();
@@ -322,6 +322,38 @@ void DFPongController::update() {
     // Update status LED
     updateLED();
     
+    // Auto-send NEUTRAL if no sendControl() was called in the PREVIOUS loop
+    // We check the previous loop because update() runs at the START of each loop,
+    // before the user's input code has a chance to call sendControl().
+    // This ensures click-based control schemes work correctly:
+    // - Loop 1: User clicks → sendControl(UP) → UP is sent
+    // - Loop 2: update() sees previous loop had a call, does nothing
+    // - Loop 3: update() sees no call in loop 2 → sends NEUTRAL → paddle stops
+    if (!_controlCalledPreviousLoop && isReady()) {
+        // Internally send NEUTRAL
+        int valueToSend = NEUTRAL;
+        if (valueToSend != _lastSentValue) {
+            _valueChanged = true;
+        }
+        unsigned long currentTime = millis();
+        if (_valueChanged && (currentTime - _lastNotificationTime >= MIN_NOTIFICATION_INTERVAL)) {
+#ifdef DFPONG_USE_NIMBLE
+            uint8_t val = (uint8_t)valueToSend;
+            _movementCharacteristic->setValue(&val, 1);
+            _movementCharacteristic->notify();
+#else
+            _movementCharacteristic->writeValue(valueToSend);
+#endif
+            _lastSentValue = valueToSend;
+            _lastNotificationTime = currentTime;
+            _valueChanged = false;
+        }
+    }
+    
+    // Shift the flags: this loop becomes previous loop for next iteration
+    _controlCalledPreviousLoop = _controlCalledThisLoop;
+    _controlCalledThisLoop = false;
+    
     // Check for handshake timeout
     if (isConnected() && !_handshakeComplete) {
         if (millis() - _connectionStartTime > HANDSHAKE_TIMEOUT) {
@@ -370,6 +402,9 @@ void DFPongController::updateLED() {
 // ============================================
 
 void DFPongController::sendControl(int direction) {
+    // Mark that sendControl was called this loop
+    _controlCalledThisLoop = true;
+    
     // Validate direction
     if (direction < 0 || direction > 2) {
         direction = NEUTRAL;
@@ -490,6 +525,8 @@ void DFPongController::resetState() {
     _handshakeComplete = false;
     _lastSentValue = 0;
     _valueChanged = false;
+    _controlCalledThisLoop = false;
+    _controlCalledPreviousLoop = true;  // Avoid auto-NEUTRAL right after reconnect
     _lastNotificationTime = 0;
     _connectionStartTime = 0;
 }
@@ -559,7 +596,7 @@ void DFPongController::onCharacteristicWritten(BLEDevice central, BLECharacteris
     
     byte value = _instance->_movementCharacteristic->value();
     
-    if (value == HANDSHAKE) {
+    if (value == HANDSHAKE && !_instance->_handshakeComplete) {
         _instance->_handshakeComplete = true;
         _instance->debugPrint("Handshake complete!");
         Serial.println("Controller ready to play!");

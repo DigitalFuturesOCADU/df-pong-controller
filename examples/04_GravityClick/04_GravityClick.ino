@@ -3,29 +3,28 @@
  * DFPongController - Gravity Click Example
  * =============================================================================
  * 
- * This example demonstrates a "flappy bird" style control where gravity
- * constantly pulls your paddle DOWN, but clicking gives you lift to go UP.
+ * This example demonstrates a "Flappy Bird" style control mechanism.
+ * Gravity constantly pulls you in one direction, and clicking gives you
+ * a burst of movement in the opposite direction.
  * 
- * HOW IT WORKS:
- * -------------
- * - You have a "lift" value that starts at zero
- * - Every click ADDS to your lift (+10)
- * - Gravity constantly SUBTRACTS from your lift over time (-1)
- * - If lift is above zero → paddle moves UP
- * - If lift is zero or below → paddle moves DOWN
+ * HOW FLAPPY BIRD PHYSICS WORK:
+ * -----------------------------
+ * 1. You have a VELOCITY (speed + direction)
+ * 2. GRAVITY constantly increases velocity (pulls you down)
+ * 3. CLICKING sets velocity to a negative value (pushes you up)
+ * 4. Your direction depends on whether velocity is positive or negative
  * 
- * The result: You must keep clicking to stay up! Stop clicking and you sink.
+ * Example timeline:
+ *   - Velocity starts at 0 (not moving)
+ *   - Gravity adds +1 each tick: 0 → 1 → 2 → 3 (falling faster)
+ *   - You CLICK! Velocity becomes -5 (jumping up)
+ *   - Gravity keeps adding: -5 → -4 → -3 → -2 → -1 → 0 → 1 → 2 (arc!)
+ *   - This creates the smooth arc motion of Flappy Bird
  * 
  * HARDWARE SETUP:
  * ---------------
  * - Connect your button/switch between pin 2 and GND
  * - No external resistors needed! We use INPUT_PULLUP mode.
- * 
- * TUNING THE FEEL:
- * ----------------
- * - liftPerClick: How much each click adds (higher = easier)
- * - gravityRate: How often gravity is applied in milliseconds (lower = harder)
- * - gravityAmount: How much gravity subtracts each time (higher = harder)
  * 
  * LED STATUS PATTERNS:
  * --------------------
@@ -38,42 +37,54 @@
  * =============================================================================
  */
 
-// Include the DFPongController library
 #include <DFPongController.h>
 
 // =============================================================================
 // PIN CONFIGURATION
 // =============================================================================
 
-int buttonPin = 2;   // Pin for the click button
+int buttonPin = 2;
 
 // =============================================================================
 // CONTROLLER CONFIGURATION
 // =============================================================================
-// Set your unique controller number (1-242)
-// Each player needs a different number!
 
 int controllerNumber = 1;  // <-- CHANGE THIS TO YOUR ASSIGNED NUMBER!
 
 // =============================================================================
-// GRAVITY SETTINGS
-// =============================================================================
-// Adjust these to change how the controller feels
-
-int liftPerClick = 10;         // How much lift each click gives you
-int gravityAmount = 1;         // How much gravity pulls you down each tick
-unsigned long gravityRate = 50; // How often gravity is applied (milliseconds)
-
-// =============================================================================
-// STATE TRACKING VARIABLES
+// FLAPPY PHYSICS SETTINGS - TUNE THESE TO CHANGE THE FEEL!
 // =============================================================================
 
-int buttonState = HIGH;        // Current state of the button
-int lastButtonState = HIGH;    // Previous state (for click detection)
+// jumpStrength: How hard you "flap" when clicking (negative = upward)
+// More negative = stronger jump, floatier feel
+// Less negative = weaker jump, need to click more often
+// Try values between -3 and -8
+int jumpStrength = -5;
 
-int lift = 0;                  // Current lift value (can go negative)
+// gravity: How much velocity increases each tick (positive = pulls down)
+// Higher = heavier, falls faster, more frantic clicking needed
+// Lower = floatier, slower falls, more relaxed gameplay
+// Try values between 1 and 3
+int gravity = 1;
 
-unsigned long lastGravityTime = 0;  // When gravity was last applied
+// maxFallSpeed: Terminal velocity - how fast you can fall
+// Prevents velocity from going too high when not clicking
+// Try values between 3 and 10
+int maxFallSpeed = 5;
+
+// physicsInterval: How often physics updates (in milliseconds)
+// Lower = smoother but more sensitive
+// Higher = choppier but more forgiving
+// Try values between 30 and 100
+unsigned long physicsInterval = 50;
+
+// =============================================================================
+// STATE VARIABLES
+// =============================================================================
+
+int velocity = 0;                     // Current velocity (negative=up, positive=down)
+int lastButtonState = HIGH;           // For click detection
+unsigned long lastPhysicsTime = 0;    // For physics timing
 
 // =============================================================================
 // CONTROLLER SETUP
@@ -82,12 +93,11 @@ unsigned long lastGravityTime = 0;  // When gravity was last applied
 DFPongController controller;
 
 // =============================================================================
-// SETUP - Runs once when Arduino powers on or resets
+// SETUP
 // =============================================================================
 
 void setup() 
 {
-    // Initialize Serial Monitor for debugging
     Serial.begin(9600);
     delay(1000);
     
@@ -95,33 +105,19 @@ void setup()
     Serial.println("DFPongController - Gravity Click");
     Serial.println("================================");
     
-    // Configure button pin
     pinMode(buttonPin, INPUT_PULLUP);
     
-    Serial.print("Button pin: ");
-    Serial.println(buttonPin);
-    
-    // Configure the controller
     controller.setControllerNumber(controllerNumber);
-    
-    Serial.print("Controller number: ");
-    Serial.println(controller.getControllerNumber());
-    
     controller.setStatusLED(LED_BUILTIN);
-    
-    // Initialize Bluetooth
-    Serial.println("Initializing Bluetooth...");
     
     if (controller.begin()) 
     {
-        Serial.println("Bluetooth initialized successfully!");
-        Serial.println("Waiting for game to connect...");
+        Serial.println("Bluetooth initialized!");
+        Serial.println("Click to flap! Gravity pulls you down.");
     } 
     else 
     {
-        Serial.println("ERROR: Failed to initialize Bluetooth!");
-        
-        // Blink rapidly to indicate error
+        Serial.println("ERROR: Bluetooth failed!");
         while (true) 
         {
             digitalWrite(LED_BUILTIN, HIGH);
@@ -131,72 +127,80 @@ void setup()
         }
     }
     
-    Serial.println("---------------------------------");
-    Serial.println("Click to go UP!");
-    Serial.println("Stop clicking and gravity pulls");
-    Serial.println("you DOWN!");
-    Serial.println("---------------------------------");
-    
-    // Initialize gravity timer
-    lastGravityTime = millis();
+    lastPhysicsTime = millis();
 }
 
 // =============================================================================
-// LOOP - Runs continuously after setup()
+// LOOP
 // =============================================================================
 
 void loop() 
 {
-    // Update the controller - REQUIRED every loop!
     controller.update();
     
     // --------------------------------------------------------------------------
-    // Read button and detect clicks
+    // STEP 1: Detect clicks (the "flap")
     // --------------------------------------------------------------------------
+    // When button is pressed, SET velocity to jumpStrength.
+    // Note: We SET it, not add to it. This is how Flappy Bird works -
+    // each flap gives the same boost regardless of current velocity.
     
-    buttonState = digitalRead(buttonPin);
+    int buttonState = digitalRead(buttonPin);
     
-    // Check for a click (button just pressed)
-    if (buttonState == LOW && lastButtonState == HIGH) 
+    if (buttonState == LOW && lastButtonState == HIGH)
     {
-        // Add lift when clicked
-        lift = lift + liftPerClick;
+        // FLAP! Set velocity to jump upward
+        velocity = jumpStrength;
         
-        Serial.print("CLICK! Lift: ");
-        Serial.println(lift);
+        Serial.print("FLAP! Velocity: ");
+        Serial.println(velocity);
     }
     
-    // Save button state for next loop
     lastButtonState = buttonState;
     
     // --------------------------------------------------------------------------
-    // Apply gravity over time
+    // STEP 2: Apply physics on a timer
     // --------------------------------------------------------------------------
+    // Gravity ALWAYS adds to velocity, making it more positive over time.
+    // This means:
+    //   - If velocity is negative (rising), gravity slows you down
+    //   - If velocity is positive (falling), gravity speeds you up
+    //   - This creates the smooth arc motion!
     
-    unsigned long currentTime = millis();
+    unsigned long now = millis();
     
-    if (currentTime - lastGravityTime >= gravityRate) 
+    if (now - lastPhysicsTime >= physicsInterval)
     {
-        // Subtract gravity from lift
-        lift = lift - gravityAmount;
+        lastPhysicsTime = now;
         
-        // Update the timer
-        lastGravityTime = currentTime;
+        // Apply gravity (always pulls toward positive/falling)
+        velocity = velocity + gravity;
+        
+        // Cap the fall speed (terminal velocity)
+        // Without this, velocity would keep increasing forever
+        if (velocity > maxFallSpeed)
+        {
+            velocity = maxFallSpeed;
+        }
     }
     
     // --------------------------------------------------------------------------
-    // Send control based on lift value
+    // STEP 3: Send direction based on velocity
     // --------------------------------------------------------------------------
-    // Lift above zero = going UP
-    // Lift at or below zero = going DOWN
-    // No NEUTRAL state - you're always moving!
+    // Negative velocity = moving upward = send DOWN (toward bottom of screen)
+    // Positive velocity = moving downward = send UP (toward top of screen)
+    // 
+    // (The directions may seem backwards, but this matches the game's
+    // coordinate system where we confirmed the behavior works correctly)
     
-    if (lift > 0) 
+    if (velocity < 0)
     {
-        controller.sendControl(UP);
-    } 
-    else 
-    {
+        // Rising (negative velocity) - move toward bottom
         controller.sendControl(DOWN);
+    }
+    else
+    {
+        // Falling (positive velocity) - move toward top  
+        controller.sendControl(UP);
     }
 }

@@ -74,6 +74,9 @@ int lastUpButtonState = HIGH;    // Previous state of UP button
 int downButtonState = HIGH;      // Current state of DOWN button
 int lastDownButtonState = HIGH;  // Previous state of DOWN button
 
+int upClickCount = 0;            // How many times UP has been clicked
+int downClickCount = 0;          // How many times DOWN has been clicked
+
 // =============================================================================
 // CONTROLLER SETUP
 // =============================================================================
@@ -185,7 +188,8 @@ void loop()
     // Update the controller - REQUIRED every loop!
     // --------------------------------------------------------------------------
     // This maintains the Bluetooth connection and updates the status LED.
-    // Without this, the controller won't work properly.
+    // The library automatically sends NEUTRAL if no sendControl() is called,
+    // which makes click detection work perfectly!
     
     controller.update();
     
@@ -205,11 +209,16 @@ void loop()
     // - Current state is LOW (button IS pressed)
     // - Previous state was HIGH (button WAS NOT pressed)
     // This means the button was JUST pressed this loop iteration.
+    //
+    // The library automatically sends NEUTRAL on the NEXT loop if we don't
+    // call sendControl(), so each click only moves the paddle once!
     
     if (upButtonState == LOW && lastUpButtonState == HIGH) 
     {
         // UP button was just clicked!
-        Serial.println("UP clicked!");
+        upClickCount++;
+        Serial.print("UP clicked! Count: ");
+        Serial.println(upClickCount);
         controller.sendControl(UP);
     }
     
@@ -220,19 +229,10 @@ void loop()
     if (downButtonState == LOW && lastDownButtonState == HIGH) 
     {
         // DOWN button was just clicked!
-        Serial.println("DOWN clicked!");
+        downClickCount++;
+        Serial.print("DOWN clicked! Count: ");
+        Serial.println(downClickCount);
         controller.sendControl(DOWN);
-    }
-    
-    // --------------------------------------------------------------------------
-    // Send NEUTRAL when no new clicks detected
-    // --------------------------------------------------------------------------
-    // Note: We only send NEUTRAL when there are no active button presses.
-    // This is optional - you could also send NEUTRAL on button RELEASE instead.
-    
-    if (upButtonState == HIGH && downButtonState == HIGH) 
-    {
-        controller.sendControl(NEUTRAL);
     }
     
     // --------------------------------------------------------------------------
