@@ -21,7 +21,7 @@
  * ----------------------
  * 1. PLAYER settings only change YOUR side of the game:
  *      setPlayerName, setPlayerColor, setMoveSpeed, setPaddleSize,
- *      setHitSound, setScoreSound, setWinSound
+ *      setHitSound, setScoreSound, setWinSound, setMusic
  *    The game uses them as long as the teacher (admin) allows them.
  *
  * 2. GAME settings are shared by both players, so you can only REQUEST them:
@@ -143,6 +143,11 @@ void setup()
 
     controller.setHitSound("pluck");     // when YOUR paddle hits the puck
     controller.setWinSound("gong");      // when YOU win the match
+
+    // Background music for your matches: drift, tabletop, arcade or nightbus
+    // (or a link to your own music file). If your opponent picks music too,
+    // the game swaps between your picks after each point.
+    controller.setMusic("nightbus");
 
     // ...or a LINK to your own sound file (mp3 or wav).
     //

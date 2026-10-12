@@ -46,10 +46,27 @@ const char HEX_DIGITS[] = "0123456789abcdef";
 
 // Sounds the game can always play (they are synthesized in the browser).
 const char* const BUILT_IN_SOUNDS[] = {
-    "classic", "blip", "boop", "pluck", "click", "laser", "drum", "bell",
-    "chirp", "zap", "thud", "wood", "glass", "coin", "gong"
+    // recorded
+    "pingpong", "claves", "tick", "bell", "gong", "bikebell", "flourish",
+    "applause", "pip", "pipgo", "quindar", "clock",
+    // synthesized
+    "blip", "boop", "pluck", "click", "laser", "drum", "chirp", "zap",
+    "thud", "wood", "glass", "coin",
+    // the 2024 originals
+    "classic", "wall", "ding"
 };
 const size_t BUILT_IN_SOUND_COUNT = sizeof(BUILT_IN_SOUNDS) / sizeof(BUILT_IN_SOUNDS[0]);
+
+const char* const BUILT_IN_MUSIC[] = { "drift", "tabletop", "arcade", "nightbus" };
+const size_t BUILT_IN_MUSIC_COUNT = sizeof(BUILT_IN_MUSIC) / sizeof(BUILT_IN_MUSIC[0]);
+
+// The game ignores upper/lower case in names
+bool equalsIgnoreCase(const char* a, const char* b) {
+    for (; *a && *b; a++, b++) {
+        if (tolower((unsigned char)*a) != tolower((unsigned char)*b)) return false;
+    }
+    return *a == *b;
+}
 
 enum EmitMode { EMIT_COUNT, EMIT_COMPARE, EMIT_WRITE };
 
@@ -1013,6 +1030,20 @@ void DFPongController::setWinSound(const String& nameOrUrl) {
 }
 
 void DFPongController::setSound(const char* key, const char* caller, const char* nameOrUrl) {
+    setMedia(key, caller, nameOrUrl, BUILT_IN_SOUNDS, BUILT_IN_SOUND_COUNT, "sound");
+}
+
+void DFPongController::setMusic(const char* nameOrUrl) {
+    setMedia("music", "setMusic", nameOrUrl, BUILT_IN_MUSIC, BUILT_IN_MUSIC_COUNT, "music track");
+}
+
+void DFPongController::setMusic(const String& nameOrUrl) {
+    setMusic(nameOrUrl.c_str());
+}
+
+// Sounds and music: a name from the game's library, or an https:// link
+void DFPongController::setMedia(const char* key, const char* caller, const char* nameOrUrl,
+                                const char* const* names, size_t nameCount, const char* kind) {
     if (nameOrUrl == nullptr || nameOrUrl[0] == '\0') {
         removeSetting(key);
         return;
@@ -1023,7 +1054,7 @@ void DFPongController::setSound(const char* key, const char* caller, const char*
         printWarningStart(caller);
         Serial.print("(): the text is too long (");
         Serial.print((unsigned long)length);
-        Serial.println(" characters, max 200). Sound not changed.");
+        Serial.println(" characters, max 200). Not changed.");
         return;
     }
     
@@ -1035,13 +1066,13 @@ void DFPongController::setSound(const char* key, const char* caller, const char*
                            "use an https:// link to be safe.");
         } else if (!startsWithIgnoreCase(nameOrUrl, "https://")) {
             printWarningStart(caller);
-            Serial.println("(): sound links must start with https://");
+            Serial.println("(): links must start with https://");
         }
     } else {
-        // A sound name
+        // A name from the game's library
         bool builtIn = false;
-        for (size_t i = 0; i < BUILT_IN_SOUND_COUNT; i++) {
-            if (strcmp(nameOrUrl, BUILT_IN_SOUNDS[i]) == 0) {
+        for (size_t i = 0; i < nameCount; i++) {
+            if (equalsIgnoreCase(nameOrUrl, names[i])) {
                 builtIn = true;
                 break;
             }
@@ -1050,14 +1081,16 @@ void DFPongController::setSound(const char* key, const char* caller, const char*
             printWarningStart(caller);
             Serial.print("(\"");
             Serial.print(nameOrUrl);
-            Serial.println("\"): not a built-in sound name. Built-in sounds are:");
+            Serial.print("\"): not a built-in ");
+            Serial.print(kind);
+            Serial.println(" name. The built-in names are:");
             Serial.print("        ");
-            for (size_t i = 0; i < BUILT_IN_SOUND_COUNT; i++) {
+            for (size_t i = 0; i < nameCount; i++) {
                 if (i > 0) Serial.print(", ");
-                Serial.print(BUILT_IN_SOUNDS[i]);
+                Serial.print(names[i]);
             }
             Serial.println();
-            Serial.println("        (It only works if the game's sound library has a sound with this name.)");
+            Serial.println("        (It still works if a newer version of the game has one with this name.)");
         }
     }
     

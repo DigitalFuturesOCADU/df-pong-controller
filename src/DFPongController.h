@@ -51,7 +51,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.0.0"
+#define DFPONG_CONTROLLER_VERSION "2.1.0"
 
 // ============================================
 // Direction Constants
@@ -292,6 +292,19 @@ public:
     void setWinSound(const char* nameOrUrl);
     void setWinSound(const String& nameOrUrl);
     
+    /**
+     * Set the background music that plays during the match (new in 2.1).
+     * If your opponent brings music too, the game swaps between your picks
+     * each point, or whoever is at the computer can choose one.
+     * 
+     * @param nameOrUrl A music track name ("drift", "tabletop", "arcade",
+     *                  "nightbus"; full list in the README) or an https:// link
+     *                  to a music file (200 characters max).
+     *                  Use "" to go back to the room's music.
+     */
+    void setMusic(const char* nameOrUrl);
+    void setMusic(const String& nameOrUrl);
+    
     // ----------------------------------------
     // Game Setting Requests (new in 2.0)
     // ----------------------------------------
@@ -463,6 +476,8 @@ private:
     bool findSetting(const char* key, uint16_t& start, uint16_t& end);
     bool isValidKey(const char* key, const char* caller);
     void setSound(const char* key, const char* caller, const char* nameOrUrl);
+    void setMedia(const char* key, const char* caller, const char* nameOrUrl,
+                  const char* const* names, size_t nameCount, const char* kind);
     long clampInt(const char* caller, const char* part, long value, long minValue, long maxValue);
     bool clampDecimal(const char* caller, double& value, double minValue, double maxValue);
     

@@ -1,5 +1,16 @@
 # Release Notes
 
+## v2.1.0 - Background Music
+
+- New `setMusic()`: pick the background music for your matches, by name (`drift`, `tabletop`, `arcade`,
+  `nightbus`) or with an `https://` link. If both players bring music, the game swaps between their picks
+  each point, or the host chooses one.
+- The list of built-in sound names now includes the game's new recordings (`pingpong`, `claves`, `tick`,
+  `bell`, `gong`, `bikebell`, `flourish`, `applause`, `pip`, `pipgo`, `quindar`, `clock`) and `wall`/`ding`,
+  so using them no longer prints a warning. Names are now matched without regard to upper/lower case,
+  like the game does.
+- Example 06_CustomSettings shows `setMusic()`.
+
 ## v2.0.0 - Custom Settings
 
 Works with the 2026 DF Pong game, and still works with the 2025 game and every 1.x sketch (no code changes needed).

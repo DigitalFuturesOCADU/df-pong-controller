@@ -24,6 +24,7 @@ setPaddleSize	KEYWORD2
 setHitSound	KEYWORD2
 setScoreSound	KEYWORD2
 setWinSound	KEYWORD2
+setMusic	KEYWORD2
 requestPointsToWin	KEYWORD2
 requestPuckSpeed	KEYWORD2
 requestSpeedIncrement	KEYWORD2

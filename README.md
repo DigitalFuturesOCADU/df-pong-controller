@@ -163,6 +163,7 @@ These only change **your** side of the game. The game uses them unless the teach
 | `setHitSound(nameOrUrl)` | built-in sound name or `https://` link (max 200 characters) | built-in |
 | `setScoreSound(nameOrUrl)` | same as above | built-in |
 | `setWinSound(nameOrUrl)` | same as above | built-in |
+| `setMusic(nameOrUrl)` | music track name or `https://` link (max 200 characters) | the room's music |
 
 Pass `""` to a name, color or sound function to go back to the default. Very dark colors are brightened a little by the game so you can still see your paddle.
 
@@ -215,6 +216,29 @@ Setting names may use letters, numbers, `_` and `-`. `setSetting()` does not che
 Try them all in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/cc26/builder/). The game's
 [sound list](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/game/cc26/assets/sounds/manifest.json)
 is the full, current list.
+
+### Music
+
+`setMusic()` picks the background music for your matches (new in 2.1):
+
+```cpp
+controller.setMusic("nightbus");   // or a link to your own music file
+```
+
+| Built-in tracks | Mood |
+|---|---|
+| `drift` | calm |
+| `tabletop` | steady groove |
+| `arcade` | bright |
+| `nightbus` | lo-fi |
+
+These are generated live by the game, so they always work; the game's
+[music list](https://github.com/DigitalFuturesOCADU/df-pong/tree/main/game/cc26/assets/music) may add recordings.
+If your opponent brings music too, the game swaps between your picks after each point. Whoever is at the
+computer can also choose just one of them, or any other track, on the lobby's Music tile. A music link has the
+same rules as a sound link (below), except it may be long and larger than 2 MB, because it's streamed.
+
+### Your own sound file
 
 **Your own sound file** can be used by giving a link instead of a name:
 
@@ -299,6 +323,7 @@ Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browse
 | `setHitSound(nameOrUrl)` | Sound when your paddle hits the puck |
 | `setScoreSound(nameOrUrl)` | Sound when you score |
 | `setWinSound(nameOrUrl)` | Sound when you win |
+| `setMusic(nameOrUrl)` | Background music during your matches (2.1) |
 | `requestPointsToWin(points)` | Request points to win, 1-21 |
 | `requestPuckSpeed(speed)` | Request puck speed, 1-20 |
 | `requestSpeedIncrement(increment)` | Request puck speed-up per hit, 0-1 |
