@@ -85,7 +85,8 @@ You also need an ESP32 board package: either **"esp32" by Espressif Systems** (f
 
 Once your code is uploaded:
 
-1. Open the controller test page: **https://digitalfuturesocadu.github.io/df-pong/game/test/**
+1. Open the controller test page: **https://digitalfuturesocadu.github.io/df-pong/game/cc26/?test=1**
+   (it also shows your custom settings; the [2025 test page](https://digitalfuturesocadu.github.io/df-pong/game/test/) works too)
 2. Select your controller number from the dropdown
 3. Click **Connect**
 4. Your controller should connect and show movement when you press buttons
@@ -138,7 +139,7 @@ controller.requestPointsToWin(7);          // ask to play to 7 points
 controller.begin();
 ```
 
-**Easiest way:** design your settings in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/).
+**Easiest way:** design your settings in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/cc26/builder/).
 It previews your paddle, tests your sound files the same way the game loads them, and gives you the code to paste.
 
 - Settings can be set **before or after** `begin()`.
@@ -211,8 +212,8 @@ Setting names may use letters, numbers, `_` and `-`. `setSetting()` does not che
 | Synthesized by the game | `blip`, `boop`, `pluck`, `click`, `laser`, `drum`, `chirp`, `zap`, `thud`, `wood`, `glass`, `coin` |
 | The 2024 originals | `classic`, `wall`, `ding` |
 
-Try them all in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/). The game's
-[sound list](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/game/engine/2026/assets/sounds/manifest.json)
+Try them all in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/cc26/builder/). The game's
+[sound list](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/game/cc26/assets/sounds/manifest.json)
 is the full, current list.
 
 **Your own sound file** can be used by giving a link instead of a name:
@@ -409,8 +410,8 @@ Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 
 ## Links
 
-- [Test Your Controller](https://digitalfuturesocadu.github.io/df-pong/game/test/)
-- [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/)
+- [Test Your Controller](https://digitalfuturesocadu.github.io/df-pong/game/cc26/?test=1)
+- [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/cc26/builder/)
 - [Play DF Pong](https://digitalfuturesocadu.github.io/df-pong/)
 - [DF Pong Repository](https://github.com/DigitalFuturesOCADU/df-pong)
 - [DF Pong Protocol Reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/PROTOCOL.md)

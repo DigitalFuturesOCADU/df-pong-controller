@@ -86,7 +86,7 @@ keywords.txt              # IDE syntax highlighting
 
 ## Testing
 
-Test page: https://digitalfuturesocadu.github.io/df-pong/game/test/
+Test page: https://digitalfuturesocadu.github.io/df-pong/game/cc26/?test=1 (2025 page: https://digitalfuturesocadu.github.io/df-pong/game/test/)
 - Verify connection on all board types when modifying BLE code
 - Compile every example for: `arduino:samd:nano_33_iot`, `esp32:esp32:esp32`, `esp32:esp32:esp32s3`, `esp32:esp32:esp32c3`, `arduino:esp32:nano_nora`, `arduino:mbed_nano:nano33ble`, `arduino:renesas_uno:unor4wifi`
 - Check the 2025 game still works (it only knows the movement characteristic)
