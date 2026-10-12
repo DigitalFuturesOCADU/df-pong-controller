@@ -5,6 +5,17 @@ A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) cont
 ![Arduino](https://img.shields.io/badge/Arduino-Compatible-00979D?logo=arduino)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
+## What's New in 2.0
+
+- **Custom settings** - give your player a name, a paddle color, a paddle speed and size, and your own sounds, right from your Arduino code. ([jump to Custom Settings](#custom-settings))
+- **Game rule requests** - ask for the number of points to win, the puck speed and how fast it speeds up. The game combines both players' requests.
+- **Live updates** - change settings while you play (for example, a knob that changes your paddle color).
+- **No more handshake timeouts** - the library now finishes the connection handshake by itself inside `update()`. Controllers that only call `sendControl()` on a click (like `02_ClickDetection`) no longer disconnect after 5 seconds.
+- **Better ESP32 support** - real signal strength (`getRSSI()`), correct transmit power, the device name shows up in the browser's device list, and more reliable connecting.
+- **Fully backwards compatible** - every 1.x sketch works without changes, and a 2.0 controller still works with last year's (2025) game, which simply ignores the settings.
+
+Settings need the **2026 version** of the DF Pong game. See the [protocol reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/PROTOCOL.md) for the technical details.
+
 ## Supported Boards
 
 | Board | Status | BLE Library |
@@ -12,7 +23,7 @@ A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) cont
 | Arduino UNO R4 WiFi | Tested | ArduinoBLE (built-in) |
 | Arduino Nano 33 IoT | Tested | ArduinoBLE (built-in) |
 | Arduino Nano 33 BLE / BLE Sense | Supported | ArduinoBLE (built-in) |
-| ESP32 / ESP32-S3 / ESP32-C3 | Supported | NimBLE-Arduino (install separately) |
+| ESP32 / ESP32-S3 / ESP32-C3 / Arduino Nano ESP32 | Supported | NimBLE-Arduino **2.x** (install separately) |
 
 **Note:** ESP32-S2 does not have Bluetooth and is not supported.
 
@@ -62,11 +73,13 @@ Just make sure you have the correct board package installed:
 
 #### For ESP32 Boards
 
-ESP32 requires the **NimBLE-Arduino** library:
+ESP32 requires the **NimBLE-Arduino** library, **version 2.0 or newer**:
 
 1. Go to **Sketch > Include Library > Manage Libraries...**
 2. Search for **"NimBLE-Arduino"** by h2zero
-3. Click **Install**
+3. Install (or update to) the latest **2.x** version
+
+You also need an ESP32 board package: either **"esp32" by Espressif Systems** (for most ESP32 boards) or **"Arduino ESP32 Boards"** (for the Arduino Nano ESP32).
 
 ## Testing Your Controller
 
@@ -108,6 +121,119 @@ void loop() {
 }
 ```
 
+## Custom Settings
+
+Add a few lines to `setup()` to make the game yours:
+
+```cpp
+controller.setControllerNumber(1);
+
+controller.setPlayerName("Kate");          // your name in the game
+controller.setPlayerColor(208, 139, 91);   // paddle color (red, green, blue)
+controller.setMoveSpeed(14);               // paddle speed (normal is 10)
+controller.setPaddleSize(120);             // paddle size in percent (normal is 100)
+controller.setHitSound("pluck");           // sound when your paddle hits the puck
+controller.requestPointsToWin(7);          // ask to play to 7 points
+
+controller.begin();
+```
+
+**Easiest way:** design your settings in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/).
+It previews your paddle, tests your sound files the same way the game loads them, and gives you the code to paste.
+
+- Settings can be set **before or after** `begin()`.
+- If you change a setting **while connected**, the game picks it up automatically (see `07_LiveSettings`). The library sends at most 4 updates per second, and only when something actually changed.
+- Values that are out of range are fixed for you, and a message is printed in the Serial Monitor, for example:
+  `DFPong: setMoveSpeed(500) is out of range (1-100), using 100`
+- To see exactly what the game will receive: `Serial.println(controller.getSettingsJSON());`
+- Older games (2025) ignore all settings - your controller still works there.
+
+### Player Settings
+
+These only change **your** side of the game. The game uses them unless the teacher (admin) has turned that kind of customization off.
+
+| Function | Range | Game default |
+|----------|-------|--------------|
+| `setPlayerName("Kate")` | up to 20 characters (longer names are shortened) | name from the class list |
+| `setPlayerColor(r, g, b)` | 0-255 each | your side's color |
+| `setPlayerColor("#d08b5b")` | any web color (`"#rrggbb"`, `"orange"`, ...) | your side's color |
+| `setMoveSpeed(speed)` | 1-100 | 10 |
+| `setPaddleSize(percent)` | 50-200 | 100 |
+| `setHitSound(nameOrUrl)` | built-in sound name or `https://` link (max 200 characters) | built-in |
+| `setScoreSound(nameOrUrl)` | same as above | built-in |
+| `setWinSound(nameOrUrl)` | same as above | built-in |
+
+Pass `""` to a name, color or sound function to go back to the default. Very dark colors are brightened a little by the game so you can still see your paddle.
+
+### Game Setting Requests
+
+These are shared by both players, so they are **requests**:
+
+| Function | Range | Game default |
+|----------|-------|--------------|
+| `requestPointsToWin(points)` | 1-21 | 10 |
+| `requestPuckSpeed(speed)` | 1-20 | 5 |
+| `requestSpeedIncrement(increment)` | 0-1 | 0.15 |
+
+### How the Game Decides
+
+Requests are settled once, when a match starts, and the result is shown on the **Match Rules** card before the countdown:
+
+1. If the teacher **locked** a setting, the teacher's value is used.
+2. If both players asked for **different** values, the game's conflict policy decides. By default it uses the **average** (other policies: a random pick of the two, the lower one, the higher one, or ignore requests).
+3. If only **one** player asked, that request is used.
+4. If **nobody** asked, the game's normal value is used.
+
+Requests that change during a match apply to the **next** match. Full details: [DF Pong protocol reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/PROTOCOL.md).
+
+### Any Setting (Advanced)
+
+If a future version of the game adds a new setting before this library has a function for it, you can still use it by name:
+
+```cpp
+controller.setSetting("trailLength", 5);     // whole number
+controller.setSetting("glow", 0.5);          // decimal number
+controller.setSetting("rainbow", true);      // true / false
+controller.setSetting("emoji", "rocket");    // text
+controller.clearSetting("glow");             // remove one setting
+controller.clearSettings();                  // remove all settings
+```
+
+Setting names may use letters, numbers, `_` and `-`. `setSetting()` does not check ranges - the game does. All settings together must fit in 512 bytes; if a new setting doesn't fit, it is not saved and a message is printed.
+
+### Sounds
+
+**Built-in sounds** ship with the game, so they always work:
+
+| Kind | Names |
+|---|---|
+| Recordings (from public archives) | `pingpong`, `claves`, `tick`, `bell`, `gong`, `bikebell`, `flourish`, `applause`, `pip`, `pipgo`, `quindar`, `clock` |
+| Synthesized by the game | `blip`, `boop`, `pluck`, `click`, `laser`, `drum`, `chirp`, `zap`, `thud`, `wood`, `glass`, `coin` |
+| The 2024 originals | `classic`, `wall`, `ding` |
+
+Try them all in the [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/). The game's
+[sound list](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/game/engine/2026/assets/sounds/manifest.json)
+is the full, current list.
+
+**Your own sound file** can be used by giving a link instead of a name:
+
+```cpp
+controller.setScoreSound("https://raw.githubusercontent.com/YOUR-NAME/YOUR-REPO/main/score.mp3");
+```
+
+Rules for sound links:
+- The link must start with **`https://`** (`http://` links are tried as `https://`).
+- It must point **directly to the file** (`.mp3` or `.wav`), not to a web page that shows the file.
+- Keep sounds **short** and the file **under 2 MB**. It has to load within 8 seconds.
+- The link can be at most **200 characters**.
+- If the sound can't be loaded, the game plays the default sound and shows why in the lobby.
+
+Where to host your file (free, and the browser is allowed to load from them):
+1. **A public GitHub repository** - upload the file, open it on GitHub, click **Raw**, and copy the link. It starts with `https://raw.githubusercontent.com/...`
+2. **GitHub Pages** - turn on Pages in your repository's settings. The link looks like `https://YOUR-NAME.github.io/YOUR-REPO/score.mp3`
+
+Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browser isn't allowed to load sounds from them.
+
 ## Platform-Specific Notes
 
 ### Arduino UNO R4 WiFi
@@ -123,10 +249,12 @@ void loop() {
 - Built-in sensors can be used as controller inputs
 
 ### ESP32
-- Requires NimBLE-Arduino library (see installation above)
-- Use `LED_BUILTIN` or specify your LED pin (varies by board)
-- RSSI reading returns approximate value (-50 dBm) due to NimBLE limitations
+- Requires **NimBLE-Arduino 2.x** (see installation above). Version 1.x of NimBLE-Arduino will not compile.
 - ESP32-S2 is NOT supported (no Bluetooth hardware)
+- **Arduino Nano ESP32:** works like the other Nano boards - same pin names, `LED_BUILTIN` works.
+- **Generic ESP32 boards ("ESP32 Dev Module")** don't define `LED_BUILTIN`. The library then treats `LED_BUILTIN` as "no status LED" so the examples still compile. If your board has an LED (often on GPIO 2), use its number: `controller.setStatusLED(2);`
+- **Pins on generic ESP32 boards:** the examples use pins 2 and 3 for buttons. On an "ESP32 Dev Module", GPIO 3 is the USB serial receive pin and GPIO 2 often has the LED, so wire your buttons to other pins (for example 18 and 19) and change the pin numbers in the sketch.
+- Analog readings go from 0-4095 on ESP32 (0-1023 on most Arduino boards). Call `analogReadResolution(10);` in `setup()` to get 0-1023 everywhere.
 
 ## API Reference
 
@@ -134,7 +262,7 @@ void loop() {
 
 | Method | Description |
 |--------|-------------|
-| `setControllerNumber(int n)` | **Required.** Set your unique number (1-242) |
+| `setControllerNumber(int n)` | **Required.** Set your unique number (1-242). Call before `begin()` |
 | `setStatusLED(int pin)` | Set LED pin for connection status |
 | `setDebug(bool enabled)` | Enable Serial debug messages |
 | `begin()` | Initialize BLE with default name |
@@ -144,7 +272,7 @@ void loop() {
 
 | Method | Description |
 |--------|-------------|
-| `update()` | **Required.** Call every `loop()` iteration |
+| `update()` | **Required.** Call every `loop()` iteration. Also handles the handshake and sends changed settings |
 | `sendControl(int direction)` | Send `UP`, `DOWN`, or `NEUTRAL` |
 
 ### Status Methods
@@ -152,10 +280,33 @@ void loop() {
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `isConnected()` | `bool` | True if BLE connected |
-| `isReady()` | `bool` | True if connected AND handshake complete |
-| `getRSSI()` | `int` | Signal strength in dBm (-50 excellent, -90 poor) |
-| `hasStrongSignal()` | `bool` | True if signal > -70 dBm |
+| `isReady()` | `bool` | True if connected, subscribed AND handshake complete |
+| `getRSSI()` | `int` | Signal strength in dBm (-50 excellent, -90 poor), 0 if not connected |
+| `hasStrongSignal()` | `bool` | True if signal > -70 dBm (change with `setRSSIThreshold()`) |
+| `setRSSIThreshold(int dBm)` | - | Threshold used by `hasStrongSignal()` |
 | `getControllerNumber()` | `int` | Returns configured controller number |
+| `getServiceUUID()` | `const char*` | The Bluetooth service UUID (for debugging) |
+
+### Settings Methods (new in 2.0)
+
+| Method | Description |
+|--------|-------------|
+| `setPlayerName(name)` | Your name in the game (max 20 characters) |
+| `setPlayerColor(r, g, b)` / `setPlayerColor("#rrggbb")` | Paddle color |
+| `setMoveSpeed(speed)` | Paddle speed, 1-100 |
+| `setPaddleSize(percent)` | Paddle size, 50-200 |
+| `setHitSound(nameOrUrl)` | Sound when your paddle hits the puck |
+| `setScoreSound(nameOrUrl)` | Sound when you score |
+| `setWinSound(nameOrUrl)` | Sound when you win |
+| `requestPointsToWin(points)` | Request points to win, 1-21 |
+| `requestPuckSpeed(speed)` | Request puck speed, 1-20 |
+| `requestSpeedIncrement(increment)` | Request puck speed-up per hit, 0-1 |
+| `setSetting(key, value)` | Any setting by name (number, decimal, true/false or text) |
+| `clearSetting(key)` | Remove one setting |
+| `clearSettings()` | Remove all settings |
+| `getSettingsJSON()` | The settings exactly as the game reads them |
+
+Name, color and sound functions also accept Arduino `String`s.
 
 ### Constants
 
@@ -197,6 +348,25 @@ controller.setControllerNumber(YOUR_NUMBER);
 3. Try refreshing the browser page
 4. Make sure Bluetooth is enabled on your computer/phone
 
+### "Handshake timeout - disconnecting" / controller disconnects a few seconds after connecting
+After connecting, the controller and the game say "hello" to each other (the handshake). If that doesn't finish, the controller disconnects so the real game can connect.
+- **Library 1.x:** the hello was only sent from `sendControl()`. Sketches that only call `sendControl()` on a click had to be clicked within 5 seconds of connecting. **Update to 2.0** - `update()` now sends the hello by itself.
+- Make sure `controller.update()` is called in **every** `loop()`, and that `loop()` doesn't get stuck in long `delay()`s.
+- Make sure you are connecting from the DF Pong game or test page (other Bluetooth apps don't answer the hello).
+
+### My settings don't show up in the game
+1. Settings need the **2026** version of the game (older versions ignore them).
+2. Check the Serial Monitor for messages starting with `DFPong:` - they explain values that were changed or refused.
+3. Print what the game receives: `Serial.println(controller.getSettingsJSON());`
+4. The teacher (admin) may have turned off that kind of customization, or locked a game setting.
+5. Game requests (points to win, puck speed, speed increment) only apply when the **next match starts**.
+
+### My custom sound doesn't play
+- The link must start with `https://` and point directly to an `.mp3` or `.wav` file.
+- Open the link in your browser: it should play or download the sound, not show a web page.
+- Use GitHub (Raw link) or GitHub Pages; Google Drive / Dropbox links don't work.
+- Keep the file under 2 MB. The game lobby shows why a sound couldn't be loaded.
+
 ### Weak or unstable connection
 Use `getRSSI()` to check signal strength:
 ```cpp
@@ -211,11 +381,14 @@ if (controller.isConnected()) {
 - `-70 to -90`: Weak (move closer)
 - `< -90`: Very weak (connection may drop)
 
-### ESP32: NimBLE library not found
-Make sure you installed the NimBLE-Arduino library:
+### ESP32: NimBLE library not found / compile errors in NimBLE
+Make sure you installed the NimBLE-Arduino library, **version 2.x**:
 1. **Sketch > Include Library > Manage Libraries...**
 2. Search for **"NimBLE-Arduino"**
-3. Install the library by h2zero
+3. Install or update the library by h2zero to the latest 2.x version
+
+### ESP32: "LED_BUILTIN was not declared" or no status LED
+Some ESP32 boards don't have a built-in LED definition. Use the pin number of your LED instead, e.g. `controller.setStatusLED(2);` (see [ESP32 notes](#esp32)).
 
 ## Examples
 
@@ -228,15 +401,19 @@ The library includes several examples to help you get started, from basic templa
 | **02_ClickDetection** | Tap-based control - paddle moves once per click instead of continuous hold |
 | **03_ChordedInputs** | Use button combinations (chords) for multiple controls with fewer buttons |
 | **04_GravityClick** | Flappy Bird-style control - click to go up, gravity pulls you down |
-| **05_SlotMachine** | Chaotic controller where buttons only work a percentage of the time |
+| **05_SlotMachine** | Chaotic controller - each button press sends a random direction for a random time |
+| **06_CustomSettings** | Two-button controller with your own name, color, speed, size, sounds and a rule request |
+| **07_LiveSettings** | Change your paddle color live with a potentiometer while you play |
 
 Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 
 ## Links
 
 - [Test Your Controller](https://digitalfuturesocadu.github.io/df-pong/game/test/)
+- [Settings Builder](https://digitalfuturesocadu.github.io/df-pong/game/builder/)
 - [Play DF Pong](https://digitalfuturesocadu.github.io/df-pong/)
 - [DF Pong Repository](https://github.com/DigitalFuturesOCADU/df-pong)
+- [DF Pong Protocol Reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/PROTOCOL.md)
 - [Digital Futures @ OCAD U](https://www.ocadu.ca/academics/undergraduate-studies/digital-futures)
 
 ## License

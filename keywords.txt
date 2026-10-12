@@ -17,8 +17,23 @@ getRSSI	KEYWORD2
 hasStrongSignal	KEYWORD2
 getControllerNumber	KEYWORD2
 getServiceUUID	KEYWORD2
+setPlayerName	KEYWORD2
+setPlayerColor	KEYWORD2
+setMoveSpeed	KEYWORD2
+setPaddleSize	KEYWORD2
+setHitSound	KEYWORD2
+setScoreSound	KEYWORD2
+setWinSound	KEYWORD2
+requestPointsToWin	KEYWORD2
+requestPuckSpeed	KEYWORD2
+requestSpeedIncrement	KEYWORD2
+setSetting	KEYWORD2
+clearSetting	KEYWORD2
+clearSettings	KEYWORD2
+getSettingsJSON	KEYWORD2
 
 # Constants (LITERAL1)
 NEUTRAL	LITERAL1
 UP	LITERAL1
 DOWN	LITERAL1
+DFPONG_CONTROLLER_VERSION	LITERAL1

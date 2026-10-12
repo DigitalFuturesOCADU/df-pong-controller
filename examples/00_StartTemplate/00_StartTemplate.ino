@@ -112,6 +112,20 @@ void setup()
     // controller.setDebug(true);
     
     // --------------------------------------------------------------------------
+    // OPTIONAL: Custom settings (needs the 2026 DF Pong game)
+    // --------------------------------------------------------------------------
+    // Uncomment any of these lines to personalize your paddle.
+    // Older versions of the game simply ignore them.
+    // See the 06_CustomSettings example for all the details.
+    //
+    // controller.setPlayerName("Your Name");     // up to 20 characters
+    // controller.setPlayerColor(255, 136, 0);    // red, green, blue (0-255 each)
+    // controller.setMoveSpeed(14);               // 1-100 (normal is 10)
+    // controller.setPaddleSize(120);             // 50-200 percent (normal is 100)
+    // controller.setHitSound("pluck");           // a built-in sound name
+    // controller.requestPointsToWin(7);          // 1-21 (a request - the game decides)
+    
+    // --------------------------------------------------------------------------
     // Initialize Bluetooth and start advertising
     // --------------------------------------------------------------------------
     Serial.println("Initializing Bluetooth...");

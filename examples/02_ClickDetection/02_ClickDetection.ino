@@ -30,6 +30,13 @@
  * only ONCE per press, unlike digitalRead() which returns LOW continuously
  * while the button is held.
  * 
+ * CONNECTING:
+ * -----------
+ * You don't need to click anything to connect. Since library version 2.0,
+ * controller.update() finishes the connection handshake by itself.
+ * (With version 1.x you had to click within 5 seconds of connecting,
+ * otherwise the controller disconnected.)
+ * 
  * LED STATUS PATTERNS:
  * --------------------
  * - Slow blink (500ms): Disconnected, waiting for game to connect
