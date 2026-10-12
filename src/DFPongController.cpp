@@ -57,7 +57,12 @@ const char* const BUILT_IN_SOUNDS[] = {
 };
 const size_t BUILT_IN_SOUND_COUNT = sizeof(BUILT_IN_SOUNDS) / sizeof(BUILT_IN_SOUNDS[0]);
 
-const char* const BUILT_IN_MUSIC[] = { "drift", "tabletop", "arcade", "nightbus" };
+const char* const BUILT_IN_MUSIC[] = {
+    // generated live by the game
+    "drift", "tabletop", "arcade", "nightbus",
+    // recordings
+    "gymnopedie", "smallsteps", "bounce", "currents", "palmleaf", "spacemtv"
+};
 const size_t BUILT_IN_MUSIC_COUNT = sizeof(BUILT_IN_MUSIC) / sizeof(BUILT_IN_MUSIC[0]);
 
 // The game ignores upper/lower case in names

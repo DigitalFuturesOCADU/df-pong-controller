@@ -225,15 +225,20 @@ is the full, current list.
 controller.setMusic("nightbus");   // or a link to your own music file
 ```
 
-| Built-in tracks | Mood |
-|---|---|
-| `drift` | calm |
-| `tabletop` | steady groove |
-| `arcade` | bright |
-| `nightbus` | lo-fi |
+| Track | Mood | Kind |
+|---|---|---|
+| `drift` | calm | generated live by the game |
+| `tabletop` | steady groove | generated |
+| `arcade` | bright | generated |
+| `nightbus` | lo-fi | generated |
+| `gymnopedie` | calm piano (Satie) | recording, public domain |
+| `smallsteps` | calm ambient (Lee Rosevere) | recording, CC BY 4.0 |
+| `bounce` | minimal pulse (Loyalty Freak Music) | recording, CC0 |
+| `currents` | lo-fi groove (HoliznaCC0) | recording, CC0 |
+| `palmleaf` | light ragtime (Joplin) | recording, CC0 |
+| `spacemtv` | light chiptune (Komiku) | recording, CC0 |
 
-These are generated live by the game, so they always work; the game's
-[music list](https://github.com/DigitalFuturesOCADU/df-pong/tree/main/game/cc26/assets/music) may add recordings.
+Sources and credits: the game's [music credits](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/game/cc26/assets/music/CREDITS.md).
 If your opponent brings music too, the game swaps between your picks after each point. Whoever is at the
 computer can also choose just one of them, or any other track, on the lobby's Music tile. A music link has the
 same rules as a sound link (below), except it may be long and larger than 2 MB, because it's streamed.

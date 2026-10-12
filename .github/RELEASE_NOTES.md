@@ -1,5 +1,10 @@
 # Release Notes
 
+## v2.1.1
+
+- `setMusic()` knows the game's six recorded tracks (`gymnopedie`, `smallsteps`, `bounce`, `currents`,
+  `palmleaf`, `spacemtv`), so choosing one no longer prints a warning.
+
 ## v2.1.0 - Background Music
 
 - New `setMusic()`: pick the background music for your matches, by name (`drift`, `tabletop`, `arcade`,

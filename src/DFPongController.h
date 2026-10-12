@@ -51,7 +51,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.1.0"
+#define DFPONG_CONTROLLER_VERSION "2.1.1"
 
 // ============================================
 // Direction Constants
@@ -297,8 +297,8 @@ public:
      * If your opponent brings music too, the game swaps between your picks
      * each point, or whoever is at the computer can choose one.
      * 
-     * @param nameOrUrl A music track name ("drift", "tabletop", "arcade",
-     *                  "nightbus"; full list in the README) or an https:// link
+     * @param nameOrUrl A music track name (e.g. "nightbus", "gymnopedie";
+     *                  full list in the README) or an https:// link
      *                  to a music file (200 characters max).
      *                  Use "" to go back to the room's music.
      */

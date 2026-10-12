@@ -144,7 +144,8 @@ void setup()
     controller.setHitSound("pluck");     // when YOUR paddle hits the puck
     controller.setWinSound("gong");      // when YOU win the match
 
-    // Background music for your matches: drift, tabletop, arcade or nightbus
+    // Background music for your matches, for example drift, tabletop, arcade,
+    // nightbus, gymnopedie, smallsteps, bounce, currents, palmleaf or spacemtv
     // (or a link to your own music file). If your opponent picks music too,
     // the game swaps between your picks after each point.
     controller.setMusic("nightbus");
