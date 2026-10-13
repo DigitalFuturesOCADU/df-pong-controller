@@ -32,38 +32,24 @@ const uint8_t DFPongController::MANUFACTURER_DATA[2] = {0xDF, 0x01};
 namespace {
 
 // The settings JSON always starts with the schema version.
+static_assert(DFPONG_CONFIG_VERSION == 1, "the DFPONG API's configVersion changed: update SETTINGS_EMPTY and SETTINGS_HEADER_LENGTH");
 const char SETTINGS_EMPTY[] = "{\"v\":1}";
 const uint16_t SETTINGS_EMPTY_LENGTH = 7;      // strlen(SETTINGS_EMPTY)
 const uint16_t SETTINGS_HEADER_LENGTH = 6;     // strlen("{\"v\":1")
 
 const size_t MAX_KEY_LENGTH = 32;
-const size_t MAX_NAME_CHARACTERS = 20;
-const size_t MAX_SOUND_LENGTH = 200;
+const size_t MAX_NAME_CHARACTERS = DFPongSpec::NAME_MAX_CHARACTERS;
+const size_t MAX_SOUND_LENGTH = DFPongSpec::MEDIA_MAX_LENGTH;
 
 const uint16_t NO_CONNECTION = 0xFFFF;
 
 const char HEX_DIGITS[] = "0123456789abcdef";
 
-// Sounds the game can always play (they are synthesized in the browser).
-const char* const BUILT_IN_SOUNDS[] = {
-    // recorded
-    "pingpong", "claves", "tick", "bell", "gong", "bikebell", "flourish",
-    "applause", "pip", "pipgo", "quindar", "clock",
-    // synthesized
-    "blip", "boop", "pluck", "click", "laser", "drum", "chirp", "zap",
-    "thud", "wood", "glass", "coin",
-    // the 2024 originals
-    "classic", "wall", "ding"
-};
-const size_t BUILT_IN_SOUND_COUNT = sizeof(BUILT_IN_SOUNDS) / sizeof(BUILT_IN_SOUNDS[0]);
-
-const char* const BUILT_IN_MUSIC[] = {
-    // generated live by the game
-    "drift", "tabletop", "arcade", "nightbus",
-    // recordings
-    "gymnopedie", "smallsteps", "bounce", "currents", "palmleaf", "spacemtv"
-};
-const size_t BUILT_IN_MUSIC_COUNT = sizeof(BUILT_IN_MUSIC) / sizeof(BUILT_IN_MUSIC[0]);
+// Names the game always knows (the list lives in DFPongSpec.h, generated from the DFPONG API)
+const char* const* const BUILT_IN_SOUNDS = DFPongSpec::SOUNDS;
+const size_t BUILT_IN_SOUND_COUNT = DFPongSpec::SOUND_COUNT;
+const char* const* const BUILT_IN_MUSIC = DFPongSpec::MUSIC;
+const size_t BUILT_IN_MUSIC_COUNT = DFPongSpec::MUSIC_COUNT;
 
 // The game ignores upper/lower case in names
 bool equalsIgnoreCase(const char* a, const char* b) {
@@ -358,7 +344,7 @@ void DFPongController::setControllerNumber(int number) {
     }
     
     _controllerNumber = number;
-    if (number >= 1 && number <= 242) {
+    if (number >= DFPongSpec::CONTROLLER_NUMBER_MIN && number <= DFPongSpec::CONTROLLER_NUMBER_MAX) {
         generateUUIDs();
     }
     
@@ -394,10 +380,10 @@ void DFPongController::setRSSIThreshold(int dBm) {
 // ============================================
 
 void DFPongController::generateUUIDs() {
-    // Base UUIDs (must match JavaScript exactly)
-    const char* serviceBase = "19b10010-e8f2-537e-4f6c-d104768a12";
-    const char* characteristicBase = "19b10011-e8f2-537e-4f6c-d104768a12";
-    const char* configBase = "19b10012-e8f2-537e-4f6c-d104768a12";
+    // Base UUIDs (from the DFPONG API, so they always match the game)
+    const char* serviceBase = DFPongSpec::SERVICE_UUID_BASE;
+    const char* characteristicBase = DFPongSpec::MOVEMENT_UUID_BASE;
+    const char* configBase = DFPongSpec::CONFIG_UUID_BASE;
     
     // Calculate unique suffix: device 1 -> 14 (0x0e), device 2 -> 15 (0x0f), etc.
     unsigned int suffix = (unsigned int)(13 + _controllerNumber) & 0xFF;
@@ -431,7 +417,7 @@ bool DFPongController::begin(const char* deviceName) {
     }
     
     // Validate controller number
-    if (_controllerNumber < 1 || _controllerNumber > 242) {
+    if (_controllerNumber < DFPongSpec::CONTROLLER_NUMBER_MIN || _controllerNumber > DFPongSpec::CONTROLLER_NUMBER_MAX) {
         Serial.println("========================================");
         Serial.println("ERROR: Call setControllerNumber(1-242)");
         Serial.println("       before calling begin()!");
@@ -1003,11 +989,11 @@ void DFPongController::setPlayerColor(const String& cssColor) {
 }
 
 void DFPongController::setMoveSpeed(int speed) {
-    storeNumber("moveSpeed", clampInt("setMoveSpeed", nullptr, speed, 1, 100));
+    storeNumber("moveSpeed", clampInt("setMoveSpeed", nullptr, speed, DFPongSpec::MOVE_SPEED_MIN, DFPongSpec::MOVE_SPEED_MAX));
 }
 
 void DFPongController::setPaddleSize(int percent) {
-    storeNumber("paddleSize", clampInt("setPaddleSize", nullptr, percent, 50, 200));
+    storeNumber("paddleSize", clampInt("setPaddleSize", nullptr, percent, DFPongSpec::PADDLE_SIZE_MIN, DFPongSpec::PADDLE_SIZE_MAX));
 }
 
 void DFPongController::setHitSound(const char* nameOrUrl) {
@@ -1059,7 +1045,9 @@ void DFPongController::setMedia(const char* key, const char* caller, const char*
         printWarningStart(caller);
         Serial.print("(): the text is too long (");
         Serial.print((unsigned long)length);
-        Serial.println(" characters, max 200). Not changed.");
+        Serial.print(" characters, max ");
+        Serial.print((unsigned long)MAX_SOUND_LENGTH);
+        Serial.println("). Not changed.");
         return;
     }
     
@@ -1107,19 +1095,19 @@ void DFPongController::setMedia(const char* key, const char* caller, const char*
 // ============================================
 
 void DFPongController::requestPointsToWin(int points) {
-    storeNumber("pointsToWin", clampInt("requestPointsToWin", nullptr, points, 1, 21));
+    storeNumber("pointsToWin", clampInt("requestPointsToWin", nullptr, points, DFPongSpec::POINTS_TO_WIN_MIN, DFPongSpec::POINTS_TO_WIN_MAX));
 }
 
 void DFPongController::requestPuckSpeed(float speed) {
     double value = speed;
-    if (clampDecimal("requestPuckSpeed", value, 1, 20)) {
+    if (clampDecimal("requestPuckSpeed", value, DFPongSpec::PUCK_SPEED_MIN, DFPongSpec::PUCK_SPEED_MAX)) {
         storeDecimal("puckSpeed", value, "requestPuckSpeed");
     }
 }
 
 void DFPongController::requestSpeedIncrement(float increment) {
     double value = increment;
-    if (clampDecimal("requestSpeedIncrement", value, 0, 1)) {
+    if (clampDecimal("requestSpeedIncrement", value, DFPongSpec::SPEED_INCREMENT_MIN, DFPongSpec::SPEED_INCREMENT_MAX)) {
         storeDecimal("speedIncrement", value, "requestSpeedIncrement");
     }
 }

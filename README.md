@@ -358,6 +358,19 @@ Name, color and sound functions also accept Arduino `String`s.
 | `DOWN` | 2 | Paddle moves down |
 | `NEUTRAL` | 0 | No movement |
 
+### The DFPONG API
+
+The ranges, limits and built-in names in this library come from the **DFPONG API**, the one spec the
+game, this library and the Settings Builder all follow:
+[reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/API.md) ·
+[spec and how it changes](https://github.com/DigitalFuturesOCADU/df-pong/tree/main/api).
+
+- `src/DFPongSpec.h` is generated from that spec. Don't edit it by hand.
+- `DFPONG_API_VERSION` (e.g. `"1.0"`) says which version of the API this library follows; the
+  constants are in the `DFPongSpec` namespace, for example `DFPongSpec::MOVE_SPEED_MAX`.
+- A newer game may know sound or music names this library doesn't yet. They still work: the library
+  just prints a note in the Serial Monitor.
+
 ## LED Status Patterns
 
 | Pattern | Meaning |

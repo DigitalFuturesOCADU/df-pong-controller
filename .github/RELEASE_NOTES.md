@@ -1,5 +1,14 @@
 # Release Notes
 
+## v2.2.0 - The DFPONG API
+
+- Ranges, limits, built-in sound and music names, Bluetooth UUIDs and timing now come from
+  `src/DFPongSpec.h`, generated from the DFPONG API spec the game also follows
+  ([reference](https://github.com/DigitalFuturesOCADU/df-pong/blob/main/docs/API.md)). The library and
+  the game can no longer disagree about them.
+- New: `DFPONG_API_VERSION` (`"1.0"`) and the `DFPongSpec` constants, e.g. `DFPongSpec::PADDLE_SIZE_MAX`.
+- No change to how controllers behave; every sketch works as before.
+
 ## v2.1.1
 
 - `setMusic()` knows the game's six recorded tracks (`gymnopedie`, `smallsteps`, `bounce`, `currents`,

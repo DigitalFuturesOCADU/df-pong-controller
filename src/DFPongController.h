@@ -22,6 +22,7 @@
 #define DF_PONG_CONTROLLER_H
 
 #include <Arduino.h>
+#include "DFPongSpec.h"  // the DFPONG API: ranges, names and limits shared with the game (generated)
 
 // ============================================
 // Platform Detection
@@ -51,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.1.1"
+#define DFPONG_CONTROLLER_VERSION "2.2.0"
 
 // ============================================
 // Direction Constants
@@ -439,7 +440,7 @@ private:
     
     // Settings (config characteristic).
     // The JSON text is edited in place: {"v":1,"key":value,...}
-    static const uint16_t SETTINGS_MAX_LENGTH = 512;
+    static const uint16_t SETTINGS_MAX_LENGTH = DFPongSpec::CONFIG_MAX_BYTES;
     char _settingsJson[SETTINGS_MAX_LENGTH + 1];
     uint16_t _settingsLength;
     bool _settingsDirty;
@@ -448,10 +449,10 @@ private:
     static const unsigned long LED_BLINK_SLOW = 500;
     static const unsigned long LED_BLINK_FAST = 100;
     static const unsigned long MIN_NOTIFICATION_INTERVAL = 20;
-    static const unsigned long HANDSHAKE_INTERVAL = 500;
-    static const unsigned long HANDSHAKE_TIMEOUT = 5000;    // counted from subscribing
-    static const unsigned long SUBSCRIBE_TIMEOUT = 10000;   // counted from connecting
-    static const unsigned long SETTINGS_UPDATE_INTERVAL = 250;
+    static const unsigned long HANDSHAKE_INTERVAL = DFPongSpec::HANDSHAKE_REPEAT_MS;
+    static const unsigned long HANDSHAKE_TIMEOUT = DFPongSpec::HANDSHAKE_TIMEOUT_MS;  // counted from subscribing
+    static const unsigned long SUBSCRIBE_TIMEOUT = DFPongSpec::SUBSCRIBE_TIMEOUT_MS;  // counted from connecting
+    static const unsigned long SETTINGS_UPDATE_INTERVAL = DFPongSpec::CONFIG_MIN_UPDATE_MS;
     
     // Manufacturer data for device identification
     static const uint8_t MANUFACTURER_DATA[2];
