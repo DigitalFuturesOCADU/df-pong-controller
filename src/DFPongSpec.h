@@ -1,6 +1,6 @@
 // Generated from api/dfpong-api.json by api/build.mjs. Edit the spec, not this file.
 //
-// The DFPONG API 1.0: the limits and names the game and this library agree on.
+// The DFPONG API 1.1: the limits and names the game and this library agree on.
 // The game also accepts names this library doesn't know yet, so a newer game can add sounds
 // and music without a new library release.
 
@@ -8,8 +8,9 @@
 #define DFPONG_SPEC_H
 
 #include <stddef.h>
+#include <stdint.h>
 
-#define DFPONG_API_VERSION "1.0"
+#define DFPONG_API_VERSION "1.1"
 #define DFPONG_CONFIG_VERSION 1
 
 namespace DFPongSpec {
@@ -18,6 +19,7 @@ namespace DFPongSpec {
     const char* const SERVICE_UUID_BASE = "19b10010-e8f2-537e-4f6c-d104768a12";
     const char* const MOVEMENT_UUID_BASE = "19b10011-e8f2-537e-4f6c-d104768a12";
     const char* const CONFIG_UUID_BASE = "19b10012-e8f2-537e-4f6c-d104768a12";
+    const char* const ACTIONS_UUID_BASE = "19b10013-e8f2-537e-4f6c-d104768a12";
     const int CONTROLLER_NUMBER_MIN = 1;
     const int CONTROLLER_NUMBER_MAX = 242;
     const size_t CONFIG_MAX_BYTES = 512;
@@ -52,6 +54,17 @@ namespace DFPongSpec {
     const double SPEED_INCREMENT_MIN = 0.0;
     const double SPEED_INCREMENT_MAX = 1.0;
     const double SPEED_INCREMENT_DEFAULT = 0.15;
+
+    // Actions (byte 0 of a packet on the actions characteristic)
+    const size_t ACTIONS_MAX_BYTES = 20;
+    const uint8_t ACTION_POSITION = 1; // experimental
+    const unsigned long POSITION_MIN_INTERVAL_MS = 20;
+    const uint8_t ACTION_POSITION_OFF = 2; // experimental
+    const uint8_t ACTION_TAUNT = 3; // experimental
+    const unsigned long TAUNT_COOLDOWN_MS = 2000;
+    const char* const TAUNT_EMOTES[] = { "HA!", "NICE", "GG", "OOPS", "COME ON", "WOW" };
+    const size_t TAUNT_EMOTE_COUNT = 6;
+    // code 4 is reserved for power (planned)
 
     // Built-in sound names (hitSound, scoreSound, winSound)
     const char* const SOUNDS[] = {

@@ -52,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.2.0"
+#define DFPONG_CONTROLLER_VERSION "2.3.0"
 
 // ============================================
 // Direction Constants
@@ -148,6 +148,48 @@ public:
      * @param direction UP, DOWN, or NEUTRAL
      */
     void sendControl(int direction);
+    
+    // ----------------------------------------
+    // Actions (experimental: the 2026 game, DFPONG API 1.1)
+    // ----------------------------------------
+    // Things that happen during play. Older games ignore them, so they never
+    // stop a controller from working there.
+    
+    /**
+     * Steer the paddle to a height instead of using UP / DOWN: for knobs,
+     * sliders and distance sensors. The paddle still moves at its normal
+     * speed, so this is smoother than buttons, not faster. Call it as often
+     * as you like: only changes are sent (at most every 20 ms).
+     * 
+     * @param position 0.0 (top) to 1.0 (bottom)
+     */
+    void sendPosition(float position);
+    
+    /**
+     * Steer from a sensor reading, for example:
+     *     controller.sendPosition(analogRead(A0), 0, 1023);
+     * Swap low and high to turn the direction around.
+     */
+    void sendPosition(long value, long low, long high);
+    
+    /**
+     * Go back to UP / DOWN control. Sending UP or DOWN with sendControl()
+     * does this too (NEUTRAL doesn't).
+     */
+    void stopPosition();
+    
+    /**
+     * Taunt: a word pops up beside your paddle, with a sound. The game shows
+     * at most one every 2 seconds per player, and the host can turn taunts off.
+     * 
+     * @param emote 0 "HA!", 1 "NICE", 2 "GG", 3 "OOPS", 4 "COME ON", 5 "WOW"
+     */
+    void sendTaunt(int emote = 0);
+    
+    /**
+     * True when the game is listening for actions (the 2026 game).
+     */
+    bool actionsAvailable();
     
     // ----------------------------------------
     // Connection Status
@@ -398,22 +440,26 @@ private:
     NimBLEService* _pongService;
     NimBLECharacteristic* _movementCharacteristic;
     NimBLECharacteristic* _configCharacteristic;
+    NimBLECharacteristic* _actionsCharacteristic;
     NimBLEAdvertising* _pAdvertising;
 #else
     BLEService* _pongService;
     BLEByteCharacteristic* _movementCharacteristic;
     BLECharacteristic* _configCharacteristic;
+    BLECharacteristic* _actionsCharacteristic;
 #endif
 
     // UUID storage
     char _serviceUuid[37];
     char _characteristicUuid[37];
     char _configUuid[37];
+    char _actionsUuid[37];
     
     // State written by the BLE event handlers.
     // On ESP32 the handlers run in a separate task, hence "volatile".
     volatile bool _deviceConnected;
     volatile bool _subscribed;            // NimBLE only (ArduinoBLE asks the characteristic)
+    volatile bool _actionsSubscribed;     // NimBLE only, for the actions characteristic
     volatile bool _handshakeComplete;
     volatile uint16_t _connHandle;        // NimBLE only
     volatile uint8_t _connectionEvents;   // Changes on every connect / disconnect
@@ -430,6 +476,10 @@ private:
     bool _wasSubscribed;
     bool _disconnectRequested;
     uint16_t _handshakesSent;
+    int _desiredPosition;                 // 0-255 the sketch asked for (-1 = steering with UP / DOWN)
+    int _lastSentPosition;                // Last position sent on this connection (-1 = none)
+    unsigned long _lastPositionTime;
+    unsigned long _lastTauntTime;
     
     // Timing
     unsigned long _lastLedToggle;
@@ -468,6 +518,8 @@ private:
     void disconnectCentral();
     void pushSettings(unsigned long now);
     void writeConfigValue();
+    void flushPosition(unsigned long now);
+    bool notifyAction(const uint8_t* data, uint8_t length);
     void debugPrint(const char* message);
     void debugPrint(const char* message, int value);
     
@@ -491,8 +543,10 @@ private:
     // NimBLE callback classes
     class ServerCallbacks;
     class CharacteristicCallbacks;
+    class ActionsCallbacks;
     friend class ServerCallbacks;
     friend class CharacteristicCallbacks;
+    friend class ActionsCallbacks;
 #else
     static void onBLEConnected(BLEDevice central);
     static void onBLEDisconnected(BLEDevice central);

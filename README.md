@@ -275,6 +275,32 @@ Where to host your file (free, and the browser is allowed to load from them):
 
 Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browser isn't allowed to load sounds from them.
 
+## Actions: steer with a knob, taunt (experimental)
+
+*Needs the 2026 game. Experimental: these may still change in a future version.*
+
+Settings describe your controller; **actions** are things you do during play, sent the moment they happen.
+
+```cpp
+// Steer with a knob, slider or distance sensor instead of UP / DOWN
+controller.sendPosition(analogRead(A0), 0, 1023);   // or sendPosition(0.0 ... 1.0)
+
+// Taunt: a word pops up beside your paddle
+controller.sendTaunt(2);   // 0 HA!  1 NICE  2 GG  3 OOPS  4 COME ON  5 WOW
+```
+
+- **Position**: the paddle moves to that height at its normal speed, so a knob is smoother than
+  buttons, not faster. Call `sendPosition()` every loop: only changes are sent (at most every 20 ms).
+  `sendControl(UP)` or `sendControl(DOWN)` switches back to buttons (NEUTRAL doesn't), and so does
+  `stopPosition()`. Swap low and high to turn the direction around. On ESP32 boards `analogRead()`
+  goes up to 4095.
+- **Taunts**: the game shows at most one every 2 seconds per player and ignores the rest. The host can
+  turn taunts off.
+- `actionsAvailable()` is true when the game is listening. Older games ignore actions, and your
+  controller still plays there with `sendControl()`.
+
+See `08_PositionControl` (a knob and a taunt button).
+
 ## Platform-Specific Notes
 
 ### Arduino UNO R4 WiFi
@@ -315,6 +341,11 @@ Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browse
 |--------|-------------|
 | `update()` | **Required.** Call every `loop()` iteration. Also handles the handshake and sends changed settings |
 | `sendControl(int direction)` | Send `UP`, `DOWN`, or `NEUTRAL` |
+| `sendPosition(float position)` | *Experimental.* Steer to a height: 0.0 (top) to 1.0 (bottom) |
+| `sendPosition(long value, long low, long high)` | *Experimental.* Same, from a sensor reading, e.g. `(analogRead(A0), 0, 1023)` |
+| `stopPosition()` | *Experimental.* Back to `UP` / `DOWN` |
+| `sendTaunt(int emote)` | *Experimental.* A word beside your paddle: 0 HA!, 1 NICE, 2 GG, 3 OOPS, 4 COME ON, 5 WOW |
+| `actionsAvailable()` | True when the game listens for actions (the 2026 game) |
 
 ### Status Methods
 
@@ -459,6 +490,7 @@ The library includes several examples to help you get started, from basic templa
 | **05_SlotMachine** | Chaotic controller - each button press sends a random direction for a random time |
 | **06_CustomSettings** | Two-button controller with your own name, color, speed, size, sounds and a rule request |
 | **07_LiveSettings** | Change your paddle color live with a potentiometer while you play |
+| **08_PositionControl** | Steer with a knob and taunt with a button (experimental actions) |
 
 Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 

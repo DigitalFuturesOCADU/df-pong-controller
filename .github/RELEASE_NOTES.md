@@ -1,5 +1,17 @@
 # Release Notes
 
+## v2.3.0 - Actions (experimental)
+
+Needs the 2026 game; older games ignore actions and every sketch works as before.
+
+- New actions characteristic (`19b10013-...` + your controller's suffix, DFPONG API 1.1) for things
+  that happen during play.
+- `sendPosition(position)` / `sendPosition(value, low, high)`: steer with a knob, slider or distance sensor.
+  The paddle moves to that height at its normal speed. `stopPosition()` (or UP / DOWN) goes back to buttons.
+- `sendTaunt(emote)`: a word pops up beside your paddle (the game allows one every 2 seconds).
+- `actionsAvailable()`: true when the game listens for actions.
+- New example **08_PositionControl**.
+
 ## v2.2.0 - The DFPONG API
 
 - Ranges, limits, built-in sound and music names, Bluetooth UUIDs and timing now come from

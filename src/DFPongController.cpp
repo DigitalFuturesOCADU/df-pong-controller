@@ -230,6 +230,7 @@ class DFPongController::ServerCallbacks : public NimBLEServerCallbacks {
         controller->_connectionStartTime = millis();
         controller->_handshakeComplete = false;
         controller->_subscribed = false;
+        controller->_actionsSubscribed = false;
         controller->_connHandle = connInfo.getConnHandle();
         controller->_deviceConnected = true;
         controller->_connectionEvents = (uint8_t)(controller->_connectionEvents + 1);
@@ -244,6 +245,7 @@ class DFPongController::ServerCallbacks : public NimBLEServerCallbacks {
         
         controller->_deviceConnected = false;
         controller->_subscribed = false;
+        controller->_actionsSubscribed = false;
         controller->_handshakeComplete = false;
         controller->_connHandle = NO_CONNECTION;
         controller->_connectionEvents = (uint8_t)(controller->_connectionEvents + 1);
@@ -282,6 +284,16 @@ class DFPongController::CharacteristicCallbacks : public NimBLECharacteristicCal
     }
 };
 
+// The actions characteristic has its own callbacks: subscribing to it must not
+// count as subscribing to movement (which starts the handshake).
+class DFPongController::ActionsCallbacks : public NimBLECharacteristicCallbacks {
+    void onSubscribe(NimBLECharacteristic*, NimBLEConnInfo&, uint16_t subValue) override {
+        DFPongController* controller = DFPongController::_instance;
+        if (controller == nullptr) return;
+        controller->_actionsSubscribed = (subValue != 0);
+    }
+};
+
 #endif // DFPONG_USE_NIMBLE
 
 // ============================================
@@ -301,13 +313,17 @@ DFPongController::DFPongController() {
     _pongService = nullptr;
     _movementCharacteristic = nullptr;
     _configCharacteristic = nullptr;
+    _actionsCharacteristic = nullptr;
     
     _serviceUuid[0] = '\0';
     _characteristicUuid[0] = '\0';
     _configUuid[0] = '\0';
+    _actionsUuid[0] = '\0';
     
     _deviceConnected = false;
     _subscribed = false;
+    _actionsSubscribed = false;
+    _desiredPosition = -1;
     _handshakeComplete = false;
     _connHandle = NO_CONNECTION;
     _connectionEvents = 0;
@@ -384,6 +400,7 @@ void DFPongController::generateUUIDs() {
     const char* serviceBase = DFPongSpec::SERVICE_UUID_BASE;
     const char* characteristicBase = DFPongSpec::MOVEMENT_UUID_BASE;
     const char* configBase = DFPongSpec::CONFIG_UUID_BASE;
+    const char* actionsBase = DFPongSpec::ACTIONS_UUID_BASE;
     
     // Calculate unique suffix: device 1 -> 14 (0x0e), device 2 -> 15 (0x0f), etc.
     unsigned int suffix = (unsigned int)(13 + _controllerNumber) & 0xFF;
@@ -392,6 +409,7 @@ void DFPongController::generateUUIDs() {
     snprintf(_serviceUuid, sizeof(_serviceUuid), "%s%02x", serviceBase, suffix);
     snprintf(_characteristicUuid, sizeof(_characteristicUuid), "%s%02x", characteristicBase, suffix);
     snprintf(_configUuid, sizeof(_configUuid), "%s%02x", configBase, suffix);
+    snprintf(_actionsUuid, sizeof(_actionsUuid), "%s%02x", actionsBase, suffix);
 }
 
 // ============================================
@@ -479,6 +497,14 @@ bool DFPongController::begin(const char* deviceName) {
             SETTINGS_MAX_LENGTH
         );
         
+        // Actions characteristic: notify (position, taunts; experimental)
+        _actionsCharacteristic = _pongService->createCharacteristic(
+            _actionsUuid,
+            NIMBLE_PROPERTY::NOTIFY,
+            DFPongSpec::ACTIONS_MAX_BYTES
+        );
+        _actionsCharacteristic->setCallbacks(new ActionsCallbacks());
+        
         // Configure advertising: the service UUID lets the browser find us,
         // the name (in the scan response) shows up in the browser's device list
         _pAdvertising = NimBLEDevice::getAdvertising();
@@ -511,6 +537,11 @@ bool DFPongController::begin(const char* deviceName) {
             _configUuid,
             BLERead | BLENotify,
             SETTINGS_MAX_LENGTH
+        );
+        _actionsCharacteristic = new BLECharacteristic(
+            _actionsUuid,
+            BLENotify,
+            DFPongSpec::ACTIONS_MAX_BYTES
         );
     }
     
@@ -557,6 +588,7 @@ bool DFPongController::begin(const char* deviceName) {
     // Add characteristics to service and service to BLE
     _pongService->addCharacteristic(*_movementCharacteristic);
     _pongService->addCharacteristic(*_configCharacteristic);
+    _pongService->addCharacteristic(*_actionsCharacteristic);
     BLE.addService(*_pongService);
     
     // Set initial values
@@ -654,6 +686,9 @@ void DFPongController::update() {
     
     // Send a movement value that was held back by the rate limit
     flushMovement(now);
+    
+    // Send a position that was held back by its rate limit (or waited for the game)
+    flushPosition(now);
     
     // Send changed settings (at most every 250 ms)
     if (_settingsDirty && (now - _lastSettingsPush >= SETTINGS_UPDATE_INTERVAL)) {
@@ -778,6 +813,8 @@ void DFPongController::flushMovement(unsigned long now) {
     if (notifyMovement((uint8_t)_desiredValue)) {
         _lastSentValue = _desiredValue;
         _lastNotificationTime = now;
+        // UP or DOWN switches the game back to buttons, so the next position must be sent again
+        if (_lastSentValue == UP || _lastSentValue == DOWN) _lastSentPosition = -1;
         
         if (_debug) {
             debugPrint("Sent control", _lastSentValue);
@@ -796,6 +833,96 @@ bool DFPongController::notifyMovement(uint8_t value) {
 #else
     // writeValue() notifies the subscribed game and returns 0 on failure
     return _movementCharacteristic->writeValue((byte)value) > 0;
+#endif
+}
+
+// ============================================
+// Actions (experimental)
+// ============================================
+
+void DFPongController::sendPosition(float position) {
+    if (position != position) return;  // not a number
+    if (position < 0.0f) position = 0.0f;
+    if (position > 1.0f) position = 1.0f;
+    _desiredPosition = (int)(position * 255.0f + 0.5f);
+    flushPosition(millis());
+}
+
+void DFPongController::sendPosition(long value, long low, long high) {
+    if (low == high) {
+        printWarningStart("sendPosition");
+        Serial.println("(): low and high can't be the same number.");
+        return;
+    }
+    sendPosition((float)(value - low) / (float)(high - low));
+}
+
+void DFPongController::stopPosition() {
+    _desiredPosition = -1;
+    if (_lastSentPosition < 0) return;
+    const uint8_t packet[1] = {DFPongSpec::ACTION_POSITION_OFF};
+    if (actionsAvailable() && notifyAction(packet, 1)) {
+        _lastSentPosition = -1;
+    }
+}
+
+void DFPongController::flushPosition(unsigned long now) {
+    if (_desiredPosition < 0 || _desiredPosition == _lastSentPosition) return;
+    if (now - _lastPositionTime < DFPongSpec::POSITION_MIN_INTERVAL_MS) return;  // update() tries again
+    if (!actionsAvailable()) return;
+    const uint8_t packet[2] = {DFPongSpec::ACTION_POSITION, (uint8_t)_desiredPosition};
+    if (notifyAction(packet, 2)) {
+        _lastSentPosition = _desiredPosition;
+        _lastPositionTime = now;
+    }
+}
+
+void DFPongController::sendTaunt(int emote) {
+    if (emote < 0 || emote >= (int)DFPongSpec::TAUNT_EMOTE_COUNT) {
+        printWarningStart("sendTaunt");
+        Serial.print("(");
+        Serial.print(emote);
+        Serial.print("): emotes are 0 to ");
+        Serial.print((int)DFPongSpec::TAUNT_EMOTE_COUNT - 1);
+        Serial.println(". Using 0.");
+        emote = 0;
+    }
+    if (!actionsAvailable()) {
+        debugPrint("Taunt not sent: the game isn't listening for actions (needs the 2026 game)");
+        return;
+    }
+    // The game shows one taunt every 2 s; holding a button down shouldn't flood the connection
+    unsigned long now = millis();
+    if (_lastTauntTime != 0 && now - _lastTauntTime < 100) return;
+    const uint8_t packet[2] = {DFPongSpec::ACTION_TAUNT, (uint8_t)emote};
+    if (notifyAction(packet, 2)) {
+        _lastTauntTime = now;
+        if (_debug) {
+            Serial.print("Taunt: ");
+            Serial.println(DFPongSpec::TAUNT_EMOTES[emote]);
+        }
+    }
+}
+
+bool DFPongController::actionsAvailable() {
+    if (!isReady() || _actionsCharacteristic == nullptr) return false;
+#ifdef DFPONG_USE_NIMBLE
+    return _actionsSubscribed;
+#else
+    return _actionsCharacteristic->subscribed();
+#endif
+}
+
+bool DFPongController::notifyAction(const uint8_t* data, uint8_t length) {
+    if (_actionsCharacteristic == nullptr) return false;
+#ifdef DFPONG_USE_NIMBLE
+    uint16_t handle = _connHandle;
+    if (handle == NO_CONNECTION) return false;
+    _actionsCharacteristic->setValue(data, length);
+    return _actionsCharacteristic->notify(handle);
+#else
+    // writeValue() notifies the subscribed game and returns 0 on failure
+    return _actionsCharacteristic->writeValue(data, length) > 0;
 #endif
 }
 
@@ -882,6 +1009,9 @@ void DFPongController::resetState() {
     _lastNotificationTime = 0;
     _subscribeTime = 0;
     _lastHandshakeTime = 0;
+    _lastSentPosition = -1;             // A new connection hears the current position again
+    _lastPositionTime = 0;
+    _lastTauntTime = 0;
 }
 
 // ============================================

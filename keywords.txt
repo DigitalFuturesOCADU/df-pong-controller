@@ -33,6 +33,11 @@ clearSetting	KEYWORD2
 clearSettings	KEYWORD2
 getSettingsJSON	KEYWORD2
 
+sendPosition	KEYWORD2
+stopPosition	KEYWORD2
+sendTaunt	KEYWORD2
+actionsAvailable	KEYWORD2
+
 # Constants (LITERAL1)
 NEUTRAL	LITERAL1
 UP	LITERAL1
