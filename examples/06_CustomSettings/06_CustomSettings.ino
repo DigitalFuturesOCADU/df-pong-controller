@@ -96,11 +96,12 @@ void setup()
     // ==========================================================================
 
     // --------------------------------------------------------------------------
-    // Your name in the game (up to 20 characters)
+    // Your controller's name in the game (up to 20 characters)
     // --------------------------------------------------------------------------
-    // Without this, the game uses the name from the class list.
+    // If the class list already gives your controller a name, the game uses
+    // that one instead. Without either, it uses your name from the class list.
 
-    controller.setPlayerName("Kate");
+    controller.setPlayerName("Thunderpaddle");
 
     // --------------------------------------------------------------------------
     // Your paddle color

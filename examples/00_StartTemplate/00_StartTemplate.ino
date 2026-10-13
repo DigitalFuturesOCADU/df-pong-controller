@@ -118,7 +118,7 @@ void setup()
     // Older versions of the game simply ignore them.
     // See the 06_CustomSettings example for all the details.
     //
-    // controller.setPlayerName("Your Name");     // up to 20 characters
+    // controller.setPlayerName("Thunderpaddle"); // controller name, up to 20 characters
     // controller.setPlayerColor(255, 136, 0);    // red, green, blue (0-255 each)
     // controller.setMoveSpeed(14);               // 1-100 (normal is 10)
     // controller.setPaddleSize(120);             // 50-200 percent (normal is 100)

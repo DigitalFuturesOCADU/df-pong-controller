@@ -129,7 +129,7 @@ Add a few lines to `setup()` to make the game yours:
 ```cpp
 controller.setControllerNumber(1);
 
-controller.setPlayerName("Kate");          // your name in the game
+controller.setPlayerName("Thunderpaddle"); // your controller's name in the game
 controller.setPlayerColor(208, 139, 91);   // paddle color (red, green, blue)
 controller.setMoveSpeed(14);               // paddle speed (normal is 10)
 controller.setPaddleSize(120);             // paddle size in percent (normal is 100)
@@ -144,6 +144,7 @@ It previews your paddle, tests your sound files the same way the game loads them
 
 - Settings can be set **before or after** `begin()`.
 - If you change a setting **while connected**, the game picks it up automatically (see `07_LiveSettings`). The library sends at most 4 updates per second, and only when something actually changed.
+- **During a match**, the host decides when your changes apply: right away, between points (the usual: colors, names and sounds at once, paddle speed and size at the next serve), or after the match. The game shows a message when a change has to wait. Rule requests and music always wait for the next match.
 - Values that are out of range are fixed for you, and a message is printed in the Serial Monitor, for example:
   `DFPong: setMoveSpeed(500) is out of range (1-100), using 100`
 - To see exactly what the game will receive: `Serial.println(controller.getSettingsJSON());`
@@ -155,7 +156,7 @@ These only change **your** side of the game. The game uses them unless the teach
 
 | Function | Range | Game default |
 |----------|-------|--------------|
-| `setPlayerName("Kate")` | up to 20 characters (longer names are shortened) | name from the class list |
+| `setPlayerName("Thunderpaddle")` | up to 20 characters (longer names are shortened) | name from the class list (see below) |
 | `setPlayerColor(r, g, b)` | 0-255 each | your side's color |
 | `setPlayerColor("#d08b5b")` | any web color (`"#rrggbb"`, `"orange"`, ...) | your side's color |
 | `setMoveSpeed(speed)` | 1-100 | 10 |
@@ -166,6 +167,16 @@ These only change **your** side of the game. The game uses them unless the teach
 | `setMusic(nameOrUrl)` | music track name or `https://` link (max 200 characters) | the room's music |
 
 Pass `""` to a name, color or sound function to go back to the default. Very dark colors are brightened a little by the game so you can still see your paddle.
+
+**Names and the class list:** your teacher's class list (`players-config.json`) has your name and can also give your
+controller a name (`controllerName`). The game shows the first of these that exists:
+
+1. the controller name from the class list,
+2. the name from `setPlayerName()`,
+3. your own name from the class list.
+
+So if the class list already names your controller, `setPlayerName()` has no effect: ask your teacher to change it
+there instead. Your own name still shows under the controller's name in the lobby, on the VS screen and on the win screen.
 
 ### Game Setting Requests
 
@@ -321,7 +332,7 @@ Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browse
 
 | Method | Description |
 |--------|-------------|
-| `setPlayerName(name)` | Your name in the game (max 20 characters) |
+| `setPlayerName(name)` | Your controller's name in the game (max 20 characters). A controller name in the class list comes first |
 | `setPlayerColor(r, g, b)` / `setPlayerColor("#rrggbb")` | Paddle color |
 | `setMoveSpeed(speed)` | Paddle speed, 1-100 |
 | `setPaddleSize(percent)` | Paddle size, 50-200 |

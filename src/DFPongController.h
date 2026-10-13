@@ -223,11 +223,13 @@ public:
     // is printed to the Serial Monitor.
     
     /**
-     * Set the name shown for you in the game.
-     * Replaces the name from the class roster.
-     * 
+     * Set your controller's name in the game.
+     * The class list (players-config.json) comes first: if it gives your
+     * controller a name ("controllerName"), the game shows that one instead.
+     * Without either, the game shows your own name from the class list.
+     *
      * @param name Up to 20 characters (longer names are shortened).
-     *             Use "" to go back to your roster name.
+     *             Use "" to go back to the name from the class list.
      */
     void setPlayerName(const char* name);
     void setPlayerName(const String& name);
