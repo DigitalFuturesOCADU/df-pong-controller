@@ -275,11 +275,11 @@ Where to host your file (free, and the browser is allowed to load from them):
 
 Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browser isn't allowed to load sounds from them.
 
-## Actions: steer with a knob, taunt (experimental)
+## In Game Actions (experimental)
 
 *Needs the 2026 game. Experimental: these may still change in a future version.*
 
-Settings describe your controller; **actions** are things you do during play, sent the moment they happen.
+Settings describe your controller; **In Game Actions** are things you do during play (steer with a knob, taunt), sent the moment they happen.
 
 ```cpp
 // Steer with a knob, slider or distance sensor instead of UP / DOWN
