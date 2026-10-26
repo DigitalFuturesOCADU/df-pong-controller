@@ -295,7 +295,7 @@ controller.sendTaunt(2);   // 0 HA!  1 NICE  2 GG  3 OOPS  4 COME ON  5 WOW
   `stopPosition()`. Swap low and high to turn the direction around. On ESP32 boards `analogRead()`
   goes up to 4095.
 - **Taunts**: the game shows at most one every 2 seconds per player and ignores the rest. The host can
-  turn taunts off.
+  turn taunts off with the **In Game Actions** switch (steering with a knob always works).
 - `actionsAvailable()` is true when the game is listening. Older games ignore actions, and your
   controller still plays there with `sendControl()`.
 
