@@ -1,5 +1,11 @@
 # Release Notes
 
+## v2.3.1
+
+- New example **09_KnobSteering**: move your paddle with a knob, nothing else. Position is now
+  presented as one of the two ways to move a paddle (direction with buttons, or position with a knob).
+- README: Quick Start shows both ways, with an example for each.
+
 ## v2.3.0 - Actions (experimental)
 
 Needs the 2026 game; older games ignore actions and every sketch works as before.

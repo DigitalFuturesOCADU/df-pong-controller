@@ -172,6 +172,8 @@ void loop() {
 - Older games don't understand positions, so a position-only controller can't move there.
   *Experimental: positions may still change in a future version.*
 
+The full sketch, with notes on wiring and ranges: **09_KnobSteering**.
+
 ## Custom Settings
 
 Add a few lines to `setup()` to make the game yours:
@@ -540,6 +542,7 @@ The library includes several examples to help you get started, from basic templa
 | **06_CustomSettings** | Two-button controller with your own name, color, speed, size, sounds and a rule request |
 | **07_LiveSettings** | Change your paddle color live with a potentiometer while you play |
 | **08_PositionControl** | Steer with a knob and taunt with a button (experimental actions) |
+| **09_KnobSteering** | Move your paddle with a knob: the simplest position example |
 
 Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 
