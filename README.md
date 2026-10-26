@@ -93,6 +93,21 @@ Once your code is uploaded:
 
 ## Quick Start
 
+There are **two ways to move your paddle**. Pick the one that suits your sensor:
+
+| | **Direction**: up, down, stop | **Position**: a height |
+|---|---|---|
+| Good for | Buttons, switches, tilt, claps: anything on/off | Knobs, sliders, distance, light or flex sensors: anything with a range |
+| You send | `sendControl(UP)`, `sendControl(DOWN)`, `sendControl(NEUTRAL)` | `sendPosition(reading, low, high)` |
+| The paddle | Moves while you send UP or DOWN, stops on NEUTRAL | Moves to that height and stays there |
+| Works in | Every game (2024–2026) | The 2026 game, library 2.3 or newer *(new)* |
+
+The paddle moves at the same speed either way, so neither one is faster.
+
+### Direction: two buttons
+
+Each button goes from its pin to GND.
+
 ```cpp
 #include <DFPongController.h>
 
@@ -121,6 +136,41 @@ void loop() {
     }
 }
 ```
+
+### Position: a knob
+
+A potentiometer: outer legs to 3.3V and GND, middle leg to A0.
+
+```cpp
+#include <DFPongController.h>
+
+DFPongController controller;
+
+void setup() {
+    // IMPORTANT: Set YOUR unique controller number (1-242)
+    controller.setControllerNumber(1);  // <-- CHANGE THIS!
+    
+    controller.setStatusLED(LED_BUILTIN);
+    controller.begin();
+}
+
+void loop() {
+    controller.update();  // Required every loop!
+    
+    // One end of the knob puts the paddle at the top, the other end at the bottom
+    controller.sendPosition(analogRead(A0), 0, 1023);   // ESP32 boards: 0, 4095
+}
+```
+
+- `low` and `high` are your sensor's readings at the two ends. Swap them to turn the direction around,
+  or narrow them to the range your sensor really gives (a distance sensor might read 80-600).
+- Call `sendPosition()` every loop: the library only sends changes, at most every 20 ms. You can also
+  send a number from `0.0` (top) to `1.0` (bottom): `controller.sendPosition(0.5)`.
+- You can mix both: `sendControl(UP)` or `sendControl(DOWN)` switches back to direction (NEUTRAL
+  doesn't), and the next `sendPosition()` switches to position again. `stopPosition()` also goes back
+  to direction.
+- Older games don't understand positions, so a position-only controller can't move there.
+  *Experimental: positions may still change in a future version.*
 
 ## Custom Settings
 
@@ -279,27 +329,26 @@ Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browse
 
 *Needs the 2026 game. Experimental: these may still change in a future version.*
 
-Settings describe your controller; **In Game Actions** are things you do during play (steer with a knob, taunt), sent the moment they happen.
+Settings describe your controller; **In Game Actions** are things you do during play, sent the moment
+they happen.
 
 ```cpp
-// Steer with a knob, slider or distance sensor instead of UP / DOWN
-controller.sendPosition(analogRead(A0), 0, 1023);   // or sendPosition(0.0 ... 1.0)
-
-// Taunt: a word pops up beside your paddle
-controller.sendTaunt(2);   // 0 HA!  1 NICE  2 GG  3 OOPS  4 COME ON  5 WOW
+controller.sendTaunt(2);   // "GG" pops up beside your paddle
 ```
 
-- **Position**: the paddle moves to that height at its normal speed, so a knob is smoother than
-  buttons, not faster. Call `sendPosition()` every loop: only changes are sent (at most every 20 ms).
-  `sendControl(UP)` or `sendControl(DOWN)` switches back to buttons (NEUTRAL doesn't), and so does
-  `stopPosition()`. Swap low and high to turn the direction around. On ESP32 boards `analogRead()`
-  goes up to 4095.
-- **Taunts**: the game shows at most one every 2 seconds per player and ignores the rest. The host can
-  turn taunts off with the **In Game Actions** switch (steering with a knob always works).
-- `actionsAvailable()` is true when the game is listening. Older games ignore actions, and your
-  controller still plays there with `sendControl()`.
+`sendTaunt(n)` shows a word beside your paddle with a ring and a sound (your own hit sound, if you set one):
 
-See `08_PositionControl` (a knob and a taunt button).
+| `n` | 0 | 1 | 2 | 3 | 4 | 5 |
+|---|---|---|---|---|---|---|
+| Word | HA! | NICE | GG | OOPS | COME ON | WOW |
+
+- The game shows at most one taunt every 2 seconds per player and ignores the rest.
+- The host can turn taunts off with the **In Game Actions** switch.
+- `actionsAvailable()` is true when the game is listening. Older games ignore In Game Actions, and your
+  controller still plays there.
+
+Steering with a knob is one of the two ways to move your paddle: see [Quick Start](#quick-start).
+`08_PositionControl` has both: a knob for steering and a button for taunts.
 
 ## Platform-Specific Notes
 
