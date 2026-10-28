@@ -1,5 +1,13 @@
 # Release Notes
 
+## v2.4.2 - Pong 2026 starters
+
+- Examples are now in two folders: **Pong 2026** and **Pong 2025** (File > Examples > DFPongController).
+- New in Pong 2026: **dfPongStarterButtons** (two buttons on pins 32 and 33) and **dfPongStarterLight**
+  (an LDR on A1 sets the paddle's height with `sendPosition()`). Both list every customization in
+  `setup()`, commented out. Written for the Adafruit Feather ESP32 V2.
+- The earlier examples, 00_StartTemplate to 09_KnobSteering, are unchanged in Pong 2025.
+
 ## v2.4.1
 
 - `sendPosition(reading, top, bottom)`: the two numbers are now called `top` and `bottom` (the readings

@@ -541,7 +541,20 @@ Some ESP32 boards don't have a built-in LED definition. Use the pin number of yo
 
 ## Examples
 
-The library includes several examples to help you get started, from basic templates to creative control schemes:
+The examples are in two folders. Open them in Arduino IDE via **File > Examples > DFPongController**.
+
+### Pong 2026
+
+The starters for the 2026 game: simple sketches with every customization in `setup()`, commented out (remove the `//` to use one). Written for the Adafruit Feather ESP32 V2.
+
+| Example | Description |
+|---------|-------------|
+| **dfPongStarterButtons** | Two buttons on pins 32 and 33 (`INPUT_PULLUP`, no resistors): hold one to move up, the other to move down |
+| **dfPongStarterLight** | An LDR on pin A1 sets the paddle's height with `sendPosition()`: dark is the top, bright the bottom |
+
+### Pong 2025
+
+Templates and other ways to control a paddle. Their buttons are on pins 2 and 3: on an ESP32, change them (see [ESP32 notes](#esp32)).
 
 | Example | Description |
 |---------|-------------|
@@ -555,8 +568,6 @@ The library includes several examples to help you get started, from basic templa
 | **07_LiveSettings** | Change your paddle color live with a potentiometer while you play |
 | **08_PositionControl** | Steer with a knob and taunt with a button (experimental actions) |
 | **09_KnobSteering** | Move your paddle with a knob: the simplest position example |
-
-Access these examples in Arduino IDE via **File > Examples > DFPongController**.
 
 ## Links
 

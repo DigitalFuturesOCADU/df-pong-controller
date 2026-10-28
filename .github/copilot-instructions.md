@@ -71,7 +71,8 @@ Note: ArduinoBLE echoes a central's write as a notification when the central is 
 ```
 src/DFPongController.h    # Public API, platform detection, class definition
 src/DFPongController.cpp  # Implementation for both platforms
-examples/*/               # Each folder = one example with .ino file
+examples/Pong 2026/*/     # The 2026 starters, one folder per example with its .ino file
+examples/Pong 2025/*/     # The earlier examples (00_StartTemplate to 09_KnobSteering)
 library.properties        # Metadata (update version here)
 keywords.txt              # IDE syntax highlighting
 ```
