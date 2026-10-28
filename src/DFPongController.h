@@ -166,11 +166,14 @@ public:
     void sendPosition(float position);
     
     /**
-     * Steer from a sensor reading, for example:
-     *     controller.sendPosition(analogRead(A0), 0, 1023);
-     * Swap low and high to turn the direction around.
+     * Steer from a sensor reading. top is the reading that puts the paddle at
+     * the top, bottom the reading that puts it at the bottom. Any numbers work:
+     *     controller.sendPosition(analogRead(A0), 0, 1023);   // knob
+     *     controller.sendPosition(distanceCm, 5, 40);         // 5 cm = top, 40 cm = bottom
+     * Swap top and bottom to turn the direction around. Readings past either
+     * end keep the paddle at that end.
      */
-    void sendPosition(long value, long low, long high);
+    void sendPosition(long reading, long top, long bottom);
     
     /**
      * Go back to UP / DOWN control. Sending UP or DOWN with sendControl()

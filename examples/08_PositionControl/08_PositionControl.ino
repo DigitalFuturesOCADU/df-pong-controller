@@ -45,7 +45,8 @@ void loop() {
     controller.update();
 
     // The knob sets the paddle's height: one end is the top, the other the bottom.
-    // (To turn it around, swap 0 and KNOB_MAX.)
+    // sendPosition(reading, top, bottom): 0 is the reading for the top, KNOB_MAX
+    // the reading for the bottom. Swap them to turn it around.
     int reading = analogRead(KNOB_PIN);
     controller.sendPosition(reading, 0, KNOB_MAX);
 

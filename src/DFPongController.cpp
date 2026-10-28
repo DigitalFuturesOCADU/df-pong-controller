@@ -848,13 +848,13 @@ void DFPongController::sendPosition(float position) {
     flushPosition(millis());
 }
 
-void DFPongController::sendPosition(long value, long low, long high) {
-    if (low == high) {
+void DFPongController::sendPosition(long reading, long top, long bottom) {
+    if (top == bottom) {
         printWarningStart("sendPosition");
-        Serial.println("(): low and high can't be the same number.");
+        Serial.println("(): top and bottom can't be the same number.");
         return;
     }
-    sendPosition((float)(value - low) / (float)(high - low));
+    sendPosition((float)(reading - top) / (float)(bottom - top));
 }
 
 void DFPongController::stopPosition() {
