@@ -52,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.4.0"
+#define DFPONG_CONTROLLER_VERSION "2.4.1"
 
 // ============================================
 // Direction Constants

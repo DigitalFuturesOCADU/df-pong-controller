@@ -1,5 +1,11 @@
 # Release Notes
 
+## v2.4.1
+
+- `sendPosition(reading, top, bottom)`: the two numbers are now called `top` and `bottom` (the readings
+  that put the paddle at the top and at the bottom), in the code, the warning message and the README.
+  The README shows a knob, a distance sensor and a reversed light sensor. No change in behaviour.
+
 ## v2.4.0 - Name your controller from the board
 
 - New `setControllerName("Thunderpaddle")`: your controller's name in the game. With the 2026 game
