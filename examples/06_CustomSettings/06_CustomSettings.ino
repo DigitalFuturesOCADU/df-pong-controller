@@ -20,7 +20,7 @@
  * TWO KINDS OF SETTINGS:
  * ----------------------
  * 1. PLAYER settings only change YOUR side of the game:
- *      setPlayerName, setPlayerColor, setMoveSpeed, setPaddleSize,
+ *      setControllerName, setPlayerColor, setMoveSpeed, setPaddleSize,
  *      setHitSound, setScoreSound, setWinSound, setMusic
  *    The game uses them as long as the teacher (admin) allows them.
  *
@@ -98,10 +98,10 @@ void setup()
     // --------------------------------------------------------------------------
     // Your controller's name in the game (up to 20 characters)
     // --------------------------------------------------------------------------
-    // If the class list already gives your controller a name, the game uses
-    // that one instead. Without either, it uses your name from the class list.
+    // This name comes first. Without it, the game uses the controller name
+    // from the class list, then your own name from the class list.
 
-    controller.setPlayerName("Thunderpaddle");
+    controller.setControllerName("Thunderpaddle");
 
     // --------------------------------------------------------------------------
     // Your paddle color

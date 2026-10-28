@@ -1,5 +1,13 @@
 # Release Notes
 
+## v2.4.0 - Name your controller from the board
+
+- New `setControllerName("Thunderpaddle")`: your controller's name in the game. With the 2026 game
+  (DFPONG API 1.2) the name set on the board now comes first; without it the game uses the controller
+  name from the class list, then your own name.
+- `setPlayerName()` still works and does the same thing (it was the function's name before 2.4).
+- Examples use `setControllerName()`.
+
 ## v2.3.1
 
 - New example **09_KnobSteering**: move your paddle with a knob, nothing else. Position is now

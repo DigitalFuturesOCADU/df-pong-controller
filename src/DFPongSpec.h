@@ -1,6 +1,6 @@
 // Generated from api/dfpong-api.json by api/build.mjs. Edit the spec, not this file.
 //
-// The DFPONG API 1.1: the limits and names the game and this library agree on.
+// The DFPONG API 1.2: the limits and names the game and this library agree on.
 // The game also accepts names this library doesn't know yet, so a newer game can add sounds
 // and music without a new library release.
 
@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DFPONG_API_VERSION "1.1"
+#define DFPONG_API_VERSION "1.2"
 #define DFPONG_CONFIG_VERSION 1
 
 namespace DFPongSpec {

@@ -1018,7 +1018,24 @@ void DFPongController::resetState() {
 // Player Settings
 // ============================================
 
+void DFPongController::setControllerName(const char* name) {
+    storeName("setControllerName", name);
+}
+
+void DFPongController::setControllerName(const String& name) {
+    storeName("setControllerName", name.c_str());
+}
+
 void DFPongController::setPlayerName(const char* name) {
+    storeName("setPlayerName", name);
+}
+
+void DFPongController::setPlayerName(const String& name) {
+    storeName("setPlayerName", name.c_str());
+}
+
+// The controller's name ("name" in the settings JSON)
+void DFPongController::storeName(const char* caller, const char* name) {
     if (name == nullptr || name[0] == '\0') {
         removeSetting("name");
         return;
@@ -1048,17 +1065,14 @@ void DFPongController::setPlayerName(const char* name) {
     memcpy(shortName, name, bytes);
     shortName[bytes] = '\0';
     
-    printWarningStart("setPlayerName(\"");
+    printWarningStart(caller);
+    Serial.print("(\"");
     Serial.print(name);
     Serial.print("\") is too long (max 20 characters), using \"");
     Serial.print(shortName);
     Serial.println("\"");
     
     storeSetting("name", shortName, true);
-}
-
-void DFPongController::setPlayerName(const String& name) {
-    setPlayerName(name.c_str());
 }
 
 void DFPongController::setPlayerColor(int r, int g, int b) {

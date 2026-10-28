@@ -181,7 +181,7 @@ Add a few lines to `setup()` to make the game yours:
 ```cpp
 controller.setControllerNumber(1);
 
-controller.setPlayerName("Thunderpaddle"); // your controller's name in the game
+controller.setControllerName("Thunderpaddle"); // your controller's name in the game
 controller.setPlayerColor(208, 139, 91);   // paddle color (red, green, blue)
 controller.setMoveSpeed(14);               // paddle speed (normal is 10)
 controller.setPaddleSize(120);             // paddle size in percent (normal is 100)
@@ -208,7 +208,7 @@ These only change **your** side of the game. The game uses them unless the teach
 
 | Function | Range | Game default |
 |----------|-------|--------------|
-| `setPlayerName("Thunderpaddle")` | up to 20 characters (longer names are shortened) | name from the class list (see below) |
+| `setControllerName("Thunderpaddle")` | up to 20 characters (longer names are shortened) | name from the class list (see below) |
 | `setPlayerColor(r, g, b)` | 0-255 each | your side's color |
 | `setPlayerColor("#d08b5b")` | any web color (`"#rrggbb"`, `"orange"`, ...) | your side's color |
 | `setMoveSpeed(speed)` | 1-100 | 10 |
@@ -223,12 +223,13 @@ Pass `""` to a name, color or sound function to go back to the default. Very dar
 **Names and the class list:** your teacher's class list (`players-config.json`) has your name and can also give your
 controller a name (`controllerName`). The game shows the first of these that exists:
 
-1. the controller name from the class list,
-2. the name from `setPlayerName()`,
+1. the name your board sets with `setControllerName()`,
+2. the controller name from the class list,
 3. your own name from the class list.
 
-So if the class list already names your controller, `setPlayerName()` has no effect: ask your teacher to change it
-there instead. Your own name still shows under the controller's name in the lobby, on the VS screen and on the win screen.
+So you can always name your controller from the board; without it, the class list decides. (The host can turn custom
+names off, and then the class list is used.) Your own name still shows under the controller's name in the lobby, on
+the VS screen and on the win screen. `setPlayerName()` is the same function under its older name (before 2.4).
 
 ### Game Setting Requests
 
@@ -414,7 +415,8 @@ Steering with a knob is one of the two ways to move your paddle: see [Quick Star
 
 | Method | Description |
 |--------|-------------|
-| `setPlayerName(name)` | Your controller's name in the game (max 20 characters). A controller name in the class list comes first |
+| `setControllerName(name)` | Your controller's name in the game (max 20 characters). Comes first; without it the class list is used |
+| `setPlayerName(name)` | Same as `setControllerName()` (its older name) |
 | `setPlayerColor(r, g, b)` / `setPlayerColor("#rrggbb")` | Paddle color |
 | `setMoveSpeed(speed)` | Paddle speed, 1-100 |
 | `setPaddleSize(percent)` | Paddle size, 50-200 |

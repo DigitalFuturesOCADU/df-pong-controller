@@ -52,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.3.1"
+#define DFPONG_CONTROLLER_VERSION "2.4.0"
 
 // ============================================
 // Direction Constants
@@ -266,14 +266,18 @@ public:
     // is printed to the Serial Monitor.
     
     /**
-     * Set your controller's name in the game.
-     * The class list (players-config.json) comes first: if it gives your
-     * controller a name ("controllerName"), the game shows that one instead.
-     * Without either, the game shows your own name from the class list.
+     * Set your controller's name in the game, e.g. setControllerName("Thunderpaddle").
+     * The name you set here comes first. Without it, the game uses the
+     * controller name from the class list (players-config.json), then your
+     * own name from the class list.
      *
      * @param name Up to 20 characters (longer names are shortened).
      *             Use "" to go back to the name from the class list.
      */
+    void setControllerName(const char* name);
+    void setControllerName(const String& name);
+    
+    /** Same as setControllerName() (its name before library 2.4). */
     void setPlayerName(const char* name);
     void setPlayerName(const String& name);
     
@@ -518,6 +522,7 @@ private:
     void disconnectCentral();
     void pushSettings(unsigned long now);
     void writeConfigValue();
+    void storeName(const char* caller, const char* name);
     void flushPosition(unsigned long now);
     bool notifyAction(const uint8_t* data, uint8_t length);
     void debugPrint(const char* message);

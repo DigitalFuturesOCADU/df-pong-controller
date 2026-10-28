@@ -17,6 +17,7 @@ getRSSI	KEYWORD2
 hasStrongSignal	KEYWORD2
 getControllerNumber	KEYWORD2
 getServiceUUID	KEYWORD2
+setControllerName	KEYWORD2
 setPlayerName	KEYWORD2
 setPlayerColor	KEYWORD2
 setMoveSpeed	KEYWORD2

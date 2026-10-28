@@ -105,7 +105,7 @@ void setup()
     controller.setStatusLED(LED_BUILTIN);
 
     // Settings that never change can still go here
-    controller.setPlayerName("Rainbow");
+    controller.setControllerName("Rainbow");
 
     // Set the first color from the knob's current position
     updateColorFromKnob();
