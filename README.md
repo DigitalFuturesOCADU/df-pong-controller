@@ -437,6 +437,56 @@ void loop() {
 - A *passive* piezo plays any note. An *active* buzzer (it beeps on its own when powered) only makes one sound;
   use `digitalWrite()` for those.
 
+## Game Events and a Buzzer (experimental, 2.5)
+
+*Needs the 2026 game. Experimental: these may still change in a future version.*
+
+The game tells your controller what just happened: your paddle hit the puck, you scored, it's match point,
+you won. Your controller can play a sound, light an LED, buzz a motor or move a servo.
+
+**A piezo buzzer, with built-in sounds:**
+
+```cpp
+controller.setBuzzer(11);   // in setup(): the buzzer's pin
+```
+
+That's all: it does what the `tone()` code in **Sounds on the Controller** above does by hand, and more. It plays a jingle when the controller starts, two rising notes when the game connects, two falling
+notes if the connection drops, and a sound for every game event. Sounds never stop your `loop()`; a more
+important sound (winning) is never cut off by a less important one (a hit). `setBuzzer(11, false)` keeps only
+the start / connect / drop sounds, and `controller.playTone(880, 100)` plays your own note.
+
+**Your own reaction to each event:**
+
+```cpp
+void gameEvent(int event, int value) {
+    if (event == EVENT_SCORED) digitalWrite(ledPin, HIGH);
+    if (event == EVENT_HIT) analogWrite(motorPin, value);   // value: how fast the puck was going
+}
+
+void setup() {
+    // ...
+    controller.onGameEvent(gameEvent);
+}
+```
+
+Or ask in `loop()`: `int event = controller.readGameEvent();` (`NO_EVENT` when nothing happened), with
+`controller.gameEventValue()` for its value.
+
+| Event | When | `value` |
+|---|---|---|
+| `EVENT_MATCH_START` | a match is starting (the NAME vs NAME screen) | |
+| `EVENT_COUNTDOWN` | each beat of the countdown | 3, 2, 1, then 0 for GO |
+| `EVENT_HIT` | your paddle hit the puck | puck speed, 0 (slow) to 255 (top speed) |
+| `EVENT_SCORED` | you scored | your score |
+| `EVENT_CONCEDED` | the other player scored | their score |
+| `EVENT_MATCH_POINT` | the next point can end the match | 1: you can win, 0: they can, 2: next point wins |
+| `EVENT_WON` / `EVENT_LOST` | the match is over | |
+| `EVENT_PAUSED` / `EVENT_RESUMED` | the game paused / resumed | |
+| `EVENT_TAUNTED` | the other player taunted you | the word (0-5) |
+
+`controller.myScore()` and `controller.theirScore()` give the score as the game last told it. Older games
+don't send events; everything else still works. See the **dfPongGameEvents** example.
+
 ## Platform-Specific Notes
 
 ### Arduino UNO R4 WiFi
@@ -484,6 +534,11 @@ void loop() {
 | `stopPosition()` | *Experimental.* Back to `UP` / `DOWN` |
 | `sendTaunt(int emote)` | *Experimental.* A word beside your paddle: 0 HA!, 1 NICE, 2 GG, 3 OOPS, 4 COME ON, 5 WOW |
 | `actionsAvailable()` | True when the game listens for actions (the 2026 game) |
+| `setBuzzer(int pin, bool gameSounds = true)` | *Experimental (2.5).* Built-in sounds on a piezo buzzer; `-1` for none |
+| `playTone(int frequency, int ms)` | *Experimental (2.5).* Your own note on the buzzer, without stopping `loop()` |
+| `onGameEvent(function)` | *Experimental (2.5).* Your function `(int event, int value)` runs for every game event |
+| `readGameEvent()` / `gameEventValue()` | *Experimental (2.5).* The next game event (`NO_EVENT` if none) and its value |
+| `myScore()` / `theirScore()` | *Experimental (2.5).* The score as the game last told it |
 
 ### Status Methods
 
@@ -641,6 +696,7 @@ The starters for the 2026 game: simple sketches with every customization in `set
 |---------|-------------|
 | **dfPongStarterButtons** | Two buttons on pins 32 and 33 (`INPUT_PULLUP`, no resistors): hold one to move up, the other to move down |
 | **dfPongStarterLight** | An LDR on pin A1 sets the paddle's height with `sendPosition()`: dark is the top, bright the bottom |
+| **dfPongGameEvents** | Buttons plus a piezo buzzer: built-in sounds for every game event, and your own reactions (experimental, 2.5) |
 
 ### Pong 2025
 

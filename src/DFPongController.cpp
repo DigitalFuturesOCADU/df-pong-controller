@@ -294,6 +294,17 @@ class DFPongController::ActionsCallbacks : public NimBLECharacteristicCallbacks 
     }
 };
 
+// The game writes events here. This runs in the Bluetooth task, so it only queues
+// the event; update() plays the sound and calls the sketch.
+class DFPongController::EventsCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo&) override {
+        DFPongController* controller = DFPongController::_instance;
+        if (controller == nullptr) return;
+        NimBLEAttValue value = pCharacteristic->getValue();
+        controller->receiveEvent(value.data(), value.length());
+    }
+};
+
 #endif // DFPONG_USE_NIMBLE
 
 // ============================================
@@ -314,11 +325,33 @@ DFPongController::DFPongController() {
     _movementCharacteristic = nullptr;
     _configCharacteristic = nullptr;
     _actionsCharacteristic = nullptr;
+    _eventsCharacteristic = nullptr;
     
     _serviceUuid[0] = '\0';
     _characteristicUuid[0] = '\0';
     _configUuid[0] = '\0';
     _actionsUuid[0] = '\0';
+    _eventsUuid[0] = '\0';
+    
+    _incomingHead = 0;
+    _incomingTail = 0;
+    _readableHead = 0;
+    _readableTail = 0;
+    _lastEventValue = 0;
+    _myScore = 0;
+    _theirScore = 0;
+    _eventHandler = nullptr;
+    _buzzerPin = -1;
+    _gameSounds = true;
+    _melody = nullptr;
+    _melodyLength = 0;
+    _melodyIndex = 0;
+    _melodyPriority = 0;
+    _melodyPlaying = false;
+    _noteEndsAt = 0;
+    _singleNote.frequency = 0;
+    _singleNote.ms = 0;
+    _soundReady = false;
     
     _deviceConnected = false;
     _subscribed = false;
@@ -403,6 +436,7 @@ void DFPongController::generateUUIDs() {
     const char* characteristicBase = DFPongSpec::MOVEMENT_UUID_BASE;
     const char* configBase = DFPongSpec::CONFIG_UUID_BASE;
     const char* actionsBase = DFPongSpec::ACTIONS_UUID_BASE;
+    const char* eventsBase = DFPongSpec::EVENTS_UUID_BASE;
     
     // Calculate unique suffix: device 1 -> 14 (0x0e), device 2 -> 15 (0x0f), etc.
     unsigned int suffix = (unsigned int)(13 + _controllerNumber) & 0xFF;
@@ -412,6 +446,7 @@ void DFPongController::generateUUIDs() {
     snprintf(_characteristicUuid, sizeof(_characteristicUuid), "%s%02x", characteristicBase, suffix);
     snprintf(_configUuid, sizeof(_configUuid), "%s%02x", configBase, suffix);
     snprintf(_actionsUuid, sizeof(_actionsUuid), "%s%02x", actionsBase, suffix);
+    snprintf(_eventsUuid, sizeof(_eventsUuid), "%s%02x", eventsBase, suffix);
 }
 
 // ============================================
@@ -509,6 +544,14 @@ bool DFPongController::begin(const char* deviceName) {
         );
         _actionsCharacteristic->setCallbacks(new ActionsCallbacks());
         
+        // Events characteristic: the game writes what happened (experimental)
+        _eventsCharacteristic = _pongService->createCharacteristic(
+            _eventsUuid,
+            NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR,
+            DFPongSpec::EVENTS_MAX_BYTES
+        );
+        _eventsCharacteristic->setCallbacks(new EventsCallbacks());
+        
         // Configure advertising: the service UUID lets the browser find us,
         // the name (in the scan response) shows up in the browser's device list
         _pAdvertising = NimBLEDevice::getAdvertising();
@@ -548,6 +591,11 @@ bool DFPongController::begin(const char* deviceName) {
             BLENotify,
             DFPongSpec::ACTIONS_MAX_BYTES
         );
+        _eventsCharacteristic = new BLECharacteristic(
+            _eventsUuid,
+            BLEWrite | BLEWriteWithoutResponse,
+            DFPongSpec::EVENTS_MAX_BYTES
+        );
     }
     
     // Initialize BLE with retry
@@ -578,6 +626,7 @@ bool DFPongController::begin(const char* deviceName) {
     BLE.setEventHandler(BLEConnected, onBLEConnected);
     BLE.setEventHandler(BLEDisconnected, onBLEDisconnected);
     _movementCharacteristic->setEventHandler(BLEWritten, onCharacteristicWritten);
+    _eventsCharacteristic->setEventHandler(BLEWritten, onEventsWritten);
     
     // Configure BLE parameters
     BLE.setLocalName(deviceName);
@@ -595,6 +644,7 @@ bool DFPongController::begin(const char* deviceName) {
     _pongService->addCharacteristic(*_movementCharacteristic);
     _pongService->addCharacteristic(*_configCharacteristic);
     _pongService->addCharacteristic(*_actionsCharacteristic);
+    _pongService->addCharacteristic(*_eventsCharacteristic);
     BLE.addService(*_pongService);
     
     // Set initial values
@@ -643,6 +693,9 @@ bool DFPongController::begin(const char* deviceName) {
 // ============================================
 
 void DFPongController::update() {
+    // The buzzer plays its notes even before begin() (the start-up jingle)
+    updateBuzzer(millis());
+    
     // Nothing to do until begin() has succeeded, except saying why if it couldn't
     if (!_serviceStarted) {
         if (_startFailed) {
@@ -706,6 +759,19 @@ void DFPongController::update() {
     
     // Send a position that was held back by its rate limit (or waited for the game)
     flushPosition(now);
+    
+    // Sounds for connecting and dropping, then whatever the game told us
+    bool ready = isReady();
+    if (ready && !_soundReady) {
+        _soundReady = true;
+        static const DFPongNote READY_SOUND[] = {{784, 80}, {1047, 120}};
+        playMelody(READY_SOUND, 2, 3);
+    } else if (!ready && _soundReady && !isConnected()) {
+        _soundReady = false;
+        static const DFPongNote DROPPED_SOUND[] = {{523, 120}, {392, 200}};
+        playMelody(DROPPED_SOUND, 2, 3);
+    }
+    handleEvents();
     
     // Send changed settings (at most every 250 ms)
     if (_settingsDirty && (now - _lastSettingsPush >= SETTINGS_UPDATE_INTERVAL)) {
@@ -887,6 +953,182 @@ bool DFPongController::notifyMovement(uint8_t value) {
     // writeValue() notifies the subscribed game and returns 0 on failure
     return _movementCharacteristic->writeValue((byte)value) > 0;
 #endif
+}
+
+// ============================================
+// Game events and the buzzer (experimental)
+// ============================================
+
+// Called by the Bluetooth side for every write to the events characteristic
+void DFPongController::receiveEvent(const uint8_t* data, size_t length) {
+    if (data == nullptr || length < 1) return;
+    uint8_t next = (uint8_t)((_incomingHead + 1) % EVENT_QUEUE_SIZE);
+    if (next == _incomingTail) return;  // full: update() hasn't caught up; drop this one
+    GameEvent& e = _incoming[_incomingHead];
+    e.code = data[0];
+    e.value = length > 1 ? data[1] : 0;
+    e.value2 = length > 2 ? data[2] : 0;
+    _incomingHead = next;
+}
+
+// Runs in update(): keep the score, play the sound, tell the sketch
+void DFPongController::handleEvents() {
+    while (_incomingTail != _incomingHead) {
+        GameEvent e = _incoming[_incomingTail];
+        _incomingTail = (uint8_t)((_incomingTail + 1) % EVENT_QUEUE_SIZE);
+        
+        if (e.code == EVENT_MATCH_START) {
+            _myScore = 0;
+            _theirScore = 0;
+        } else if (e.code == EVENT_SCORED) {
+            _myScore = e.value;
+            _theirScore = e.value2;
+        } else if (e.code == EVENT_CONCEDED) {
+            _theirScore = e.value;
+            _myScore = e.value2;
+        }
+        
+        if (_gameSounds) eventSound(e.code, e.value);
+        
+        if (_debug) {
+            Serial.print("[DFPong] Game event ");
+            Serial.print(e.code);
+            Serial.print(", value ");
+            Serial.println(e.value);
+        }
+        
+        if (_eventHandler != nullptr) {
+            _eventHandler(e.code, e.value);
+        } else {
+            // Keep it for readGameEvent(); if nobody reads, the oldest makes room
+            uint8_t next = (uint8_t)((_readableHead + 1) % EVENT_QUEUE_SIZE);
+            if (next == _readableTail) _readableTail = (uint8_t)((_readableTail + 1) % EVENT_QUEUE_SIZE);
+            _readable[_readableHead] = e;
+            _readableHead = next;
+        }
+    }
+}
+
+void DFPongController::onGameEvent(void (*handler)(int event, int value)) {
+    _eventHandler = handler;
+}
+
+int DFPongController::readGameEvent() {
+    if (_readableTail == _readableHead) return NO_EVENT;
+    GameEvent e = _readable[_readableTail];
+    _readableTail = (uint8_t)((_readableTail + 1) % EVENT_QUEUE_SIZE);
+    _lastEventValue = e.value;
+    return e.code;
+}
+
+int DFPongController::gameEventValue() {
+    return _lastEventValue;
+}
+
+int DFPongController::myScore() {
+    return _myScore;
+}
+
+int DFPongController::theirScore() {
+    return _theirScore;
+}
+
+void DFPongController::setBuzzer(int pin, bool gameSounds) {
+    if (_buzzerPin >= 0) noTone(_buzzerPin);
+    _melodyPlaying = false;
+    _buzzerPin = pin;
+    _gameSounds = gameSounds;
+    if (_buzzerPin < 0) return;
+    pinMode(_buzzerPin, OUTPUT);
+    // C E G: the controller is on
+    static const DFPongNote HELLO[] = {{523, 90}, {659, 90}, {784, 120}};
+    playMelody(HELLO, 3, 2);
+}
+
+void DFPongController::playTone(int frequency, int milliseconds) {
+    if (frequency < 0) frequency = 0;
+    if (milliseconds < 1) return;
+    _singleNote.frequency = (uint16_t)(frequency > 20000 ? 20000 : frequency);
+    _singleNote.ms = (uint16_t)(milliseconds > 10000 ? 10000 : milliseconds);
+    playMelody(&_singleNote, 1, 1);
+}
+
+// The built-in sound for each game event. Higher priority sounds aren't cut off
+// by lower ones (a hit never interrupts the winning fanfare).
+void DFPongController::eventSound(uint8_t code, uint8_t value) {
+    static const DFPongNote MATCH_START[] = {{659, 70}, {784, 70}, {1047, 110}};
+    static const DFPongNote SCORED[] = {{1047, 70}, {1319, 70}, {1568, 140}};
+    static const DFPongNote CONCEDED[] = {{659, 110}, {523, 180}};
+    static const DFPongNote MATCH_POINT_YOU[] = {{880, 70}, {1175, 70}, {880, 70}, {1175, 120}};
+    static const DFPongNote MATCH_POINT_THEM[] = {{440, 90}, {392, 90}, {440, 90}, {392, 140}};
+    static const DFPongNote MATCH_POINT_BOTH[] = {{880, 80}, {440, 80}, {880, 80}, {440, 120}};
+    static const DFPongNote WON[] = {{523, 90}, {659, 90}, {784, 90}, {1047, 180}, {0, 60}, {784, 90}, {1047, 280}};
+    static const DFPongNote LOST[] = {{392, 160}, {370, 160}, {349, 160}, {330, 340}};
+    static const DFPongNote PAUSED[] = {{440, 120}};
+    static const DFPongNote RESUMED[] = {{660, 60}, {880, 90}};
+    static const DFPongNote TAUNTED[] = {{1568, 40}, {1319, 40}, {1568, 40}, {1319, 40}, {1568, 70}};
+    
+    switch (code) {
+        case EVENT_MATCH_START: playMelody(MATCH_START, 3, 2); break;
+        case EVENT_COUNTDOWN:
+            _singleNote.frequency = value > 0 ? 880 : 1760;  // 3, 2, 1... GO (higher)
+            _singleNote.ms = value > 0 ? 60 : 160;
+            playMelody(&_singleNote, 1, 2);
+            break;
+        case EVENT_HIT:
+            // Higher as the puck speeds up
+            _singleNote.frequency = (uint16_t)(700 + value * 3);
+            _singleNote.ms = 25;
+            playMelody(&_singleNote, 1, 1);
+            break;
+        case EVENT_SCORED: playMelody(SCORED, 3, 3); break;
+        case EVENT_CONCEDED: playMelody(CONCEDED, 2, 3); break;
+        case EVENT_MATCH_POINT:
+            if (value == 1) playMelody(MATCH_POINT_YOU, 4, 4);
+            else if (value == 0) playMelody(MATCH_POINT_THEM, 4, 4);
+            else playMelody(MATCH_POINT_BOTH, 4, 4);
+            break;
+        case EVENT_WON: playMelody(WON, 7, 5); break;
+        case EVENT_LOST: playMelody(LOST, 4, 5); break;
+        case EVENT_PAUSED: playMelody(PAUSED, 1, 2); break;
+        case EVENT_RESUMED: playMelody(RESUMED, 2, 2); break;
+        case EVENT_TAUNTED: playMelody(TAUNTED, 5, 2); break;
+        default: break;  // a newer game's event: no sound for it yet
+    }
+}
+
+void DFPongController::playMelody(const DFPongNote* notes, uint8_t count, uint8_t priority) {
+    if (_buzzerPin < 0 || notes == nullptr || count == 0) return;
+    if (_melodyPlaying && priority < _melodyPriority) return;  // something more important is playing
+    _melody = notes;
+    _melodyLength = count;
+    _melodyIndex = 0;
+    _melodyPriority = priority;
+    _melodyPlaying = true;
+    startNote(millis());
+}
+
+void DFPongController::startNote(unsigned long now) {
+    const DFPongNote& note = _melody[_melodyIndex];
+    if (note.frequency > 0) {
+        tone(_buzzerPin, note.frequency, note.ms);
+    } else {
+        noTone(_buzzerPin);
+    }
+    _noteEndsAt = now + note.ms + 10;  // a tiny gap between notes
+}
+
+void DFPongController::updateBuzzer(unsigned long now) {
+    if (!_melodyPlaying || _buzzerPin < 0) return;
+    if ((long)(now - _noteEndsAt) < 0) return;
+    _melodyIndex++;
+    if (_melodyIndex >= _melodyLength) {
+        _melodyPlaying = false;
+        _melodyPriority = 0;
+        noTone(_buzzerPin);
+        return;
+    }
+    startNote(now);
 }
 
 // ============================================
@@ -1684,6 +1926,11 @@ void DFPongController::onCharacteristicWritten(BLEDevice, BLECharacteristic char
         _instance->debugPrint("Handshake complete!");
         Serial.println("Controller ready to play!");
     }
+}
+
+void DFPongController::onEventsWritten(BLEDevice, BLECharacteristic characteristic) {
+    if (_instance == nullptr) return;
+    _instance->receiveEvent(characteristic.value(), (size_t)characteristic.valueLength());
 }
 
 #endif // !DFPONG_USE_NIMBLE

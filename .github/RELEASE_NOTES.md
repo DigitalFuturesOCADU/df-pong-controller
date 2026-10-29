@@ -1,5 +1,19 @@
 # Release Notes
 
+## v2.5.0 - Game events and a buzzer (experimental, not released yet)
+
+Needs the 2026 game (DFPONG API 1.3); older games don't send events and every sketch works as before.
+
+- New events characteristic (`19b10014-...` + your controller's suffix): the game tells your controller
+  what just happened: match start, countdown, your hit, you scored, they scored, match point, won, lost,
+  paused, resumed, taunted.
+- `setBuzzer(pin)`: built-in sounds on a piezo buzzer for starting, connecting, dropping and every game
+  event, without stopping `loop()`. `playTone(frequency, ms)` for your own notes.
+- `onGameEvent(function)` or `readGameEvent()` / `gameEventValue()`: react yourself (LEDs, motors, servos).
+  `myScore()` / `theirScore()`.
+- New example **dfPongGameEvents** (Pong 2026).
+- Host tests in `extras/host-tests` (run without a board).
+
 ## v2.4.3 - Says why when Bluetooth won't start
 
 - If Bluetooth can't start (most often a Nano 33 IoT with old NINA firmware), the status LED now blinks
