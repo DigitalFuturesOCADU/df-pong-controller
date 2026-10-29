@@ -71,6 +71,20 @@ Just make sure you have the correct board package installed:
 - **Nano 33 IoT**: Install "Arduino SAMD Boards" via Boards Manager
 - **Nano 33 BLE**: Install "Arduino Mbed OS Nano Boards" via Boards Manager
 
+> **Nano 33 IoT: update the NINA firmware first.** The Nano 33 IoT's Bluetooth runs on a separate chip (the u-blox
+> NINA module) with its own firmware. Many boards ship with firmware that's too old for Bluetooth: the controller then
+> never shows up in the browser's list, and the Serial Monitor says
+> `Please ensure your NINA firmware is version 3.0.0 or higher` and `ERROR: BLE failed to initialize!`.
+> Update it once per board (it stays updated):
+>
+> 1. Plug the board in and close the Serial Monitor.
+> 2. In Arduino IDE 2: **Tools → Firmware Updater**.
+> 3. Choose the **Arduino NANO 33 IoT** and its port, click **Check Updates**, pick the newest **NINA** firmware
+>    (3.0 or later) and click **Install**.
+> 4. Upload your sketch again.
+>
+> If the board doesn't show up as a port, double-tap its reset button (the orange LED fades in and out) and try again.
+
 #### For ESP32 Boards
 
 ESP32 requires the **NimBLE-Arduino** library, **version 2.0 or newer**:
@@ -370,6 +384,8 @@ Steering with a knob is one of the two ways to move your paddle: see [Quick Star
 - Tested and verified working
 
 ### Arduino Nano 33 IoT
+- **Update the NINA firmware to the latest version before first use** (Tools → Firmware Updater; see
+  [Step 2](#step-2-install-board-specific-dependencies)). With old firmware, Bluetooth doesn't start.
 - Uses the built-in LED on pin `LED_BUILTIN`
 - Button pins may need adjustment based on your wiring
 
@@ -484,6 +500,19 @@ controller.setControllerNumber(2);  // Player 2
 ```
 
 ## Troubleshooting
+
+### Nano 33 IoT: "BLE failed to initialize" / doesn't show up in the browser's list
+The Serial Monitor shows `Please ensure your NINA firmware is version 3.0.0 or higher` and
+`ERROR: BLE failed to initialize!`, and the LED stays on without blinking. The board's Bluetooth chip needs a
+firmware update (once per board):
+
+1. Plug the board in and close the Serial Monitor.
+2. In Arduino IDE 2: **Tools → Firmware Updater**.
+3. Choose the **Arduino NANO 33 IoT** and its port, click **Check Updates**, pick the newest **NINA** firmware
+   (3.0 or later) and click **Install**.
+4. Upload your sketch again.
+
+If the board doesn't show up as a port, double-tap its reset button (the orange LED fades in and out) and try again.
 
 ### "Call setControllerNumber before begin()"
 You forgot to set your controller number. Add this before `begin()`:
