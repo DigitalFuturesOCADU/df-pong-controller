@@ -52,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.4.1"
+#define DFPONG_CONTROLLER_VERSION "2.4.3"
 
 // ============================================
 // Direction Constants
@@ -474,6 +474,8 @@ private:
     
     // State used only by update() / sendControl()
     bool _serviceStarted;
+    bool _startFailed;                    // begin() couldn't start Bluetooth
+    unsigned long _lastStartHelp;         // when the "Bluetooth didn't start" help was last printed
     bool _ledState;
     int _lastSentValue;                   // Last movement value notified (-1 = none yet)
     int _desiredValue;                    // Movement value the game should have
@@ -527,6 +529,9 @@ private:
     void writeConfigValue();
     void storeName(const char* caller, const char* name);
     void flushPosition(unsigned long now);
+    void reportStartFailure();
+    void printStartHelp();
+    void blinkStartError(unsigned long now);
     bool notifyAction(const uint8_t* data, uint8_t length);
     void debugPrint(const char* message);
     void debugPrint(const char* message, int value);

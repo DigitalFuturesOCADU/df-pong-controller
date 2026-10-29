@@ -488,6 +488,7 @@ game, this library and the Settings Builder all follow:
 | Slow blink (500ms) | Disconnected, advertising |
 | Fast blink (100ms) | Connected, handshaking |
 | Solid ON | Ready to play |
+| 3 quick blinks, then a pause | Bluetooth didn't start: open the Serial Monitor for what to do (see Troubleshooting) |
 
 ## Controller Number
 
@@ -503,8 +504,8 @@ controller.setControllerNumber(2);  // Player 2
 
 ### Nano 33 IoT: "BLE failed to initialize" / doesn't show up in the browser's list
 The Serial Monitor shows `Please ensure your NINA firmware is version 3.0.0 or higher` and
-`ERROR: BLE failed to initialize!`, and the LED stays on without blinking. The board's Bluetooth chip needs a
-firmware update (once per board):
+`ERROR: BLE failed to initialize!`, and the status LED blinks 3 times, then pauses (library 2.4.3 and newer; older
+versions leave it on). The board's Bluetooth chip needs a firmware update (once per board):
 
 1. Plug the board in and close the Serial Monitor.
 2. In Arduino IDE 2: **Tools → Firmware Updater**.

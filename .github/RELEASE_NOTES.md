@@ -1,5 +1,13 @@
 # Release Notes
 
+## v2.4.3 - Says why when Bluetooth won't start
+
+- If Bluetooth can't start (most often a Nano 33 IoT with old NINA firmware), the status LED now blinks
+  **3 times, then pauses**, instead of staying on as if everything were fine.
+- The Serial Monitor explains what to do, for your board (Nano 33 IoT and UNO R4 WiFi: update the
+  firmware with Tools > Firmware Updater). The message repeats every 10 seconds, so you see it even if
+  you open the Serial Monitor late.
+
 ## v2.4.2 - Pong 2026 starters
 
 - Examples are now in two folders: **Pong 2026** and **Pong 2025** (File > Examples > DFPongController).

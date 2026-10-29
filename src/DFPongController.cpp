@@ -330,6 +330,8 @@ DFPongController::DFPongController() {
     _connectionStartTime = 0;
     
     _serviceStarted = false;
+    _startFailed = false;
+    _lastStartHelp = 0;
     _ledState = false;
     _seenConnectionEvents = 0;
     _lastLedToggle = 0;
@@ -429,6 +431,7 @@ bool DFPongController::begin(const char* deviceName) {
         Serial.println("DFPong: begin() was already called - ignoring the extra call.");
         return true;
     }
+    _startFailed = false;
     
     if (deviceName == nullptr || deviceName[0] == '\0') {
         return begin();
@@ -465,6 +468,7 @@ bool DFPongController::begin(const char* deviceName) {
     // Initialize NimBLE (waits until the Bluetooth stack is ready)
     if (!NimBLEDevice::init(deviceName)) {
         Serial.println("ERROR: BLE failed to initialize!");
+        reportStartFailure();
         return false;
     }
     
@@ -519,6 +523,7 @@ bool DFPongController::begin(const char* deviceName) {
     // Start advertising (this also starts the GATT server)
     if (!NimBLEDevice::startAdvertising()) {
         Serial.println("ERROR: BLE advertising failed to start!");
+        reportStartFailure();
         return false;
     }
 
@@ -559,6 +564,7 @@ bool DFPongController::begin(const char* deviceName) {
     
     if (!bleStarted) {
         Serial.println("ERROR: BLE failed to initialize!");
+        reportStartFailure();
         return false;
     }
     
@@ -637,8 +643,19 @@ bool DFPongController::begin(const char* deviceName) {
 // ============================================
 
 void DFPongController::update() {
-    // Nothing to do until begin() has succeeded
-    if (!_serviceStarted) return;
+    // Nothing to do until begin() has succeeded, except saying why if it couldn't
+    if (!_serviceStarted) {
+        if (_startFailed) {
+            unsigned long now = millis();
+            blinkStartError(now);
+            // Repeat the help now and then: the Serial Monitor is often opened after startup
+            if (now - _lastStartHelp >= 10000) {
+                _lastStartHelp = now;
+                printStartHelp();
+            }
+        }
+        return;
+    }
 
 #ifndef DFPONG_USE_NIMBLE
     // Process BLE events for ArduinoBLE
@@ -745,6 +762,42 @@ void DFPongController::disconnectCentral() {
 #else
     BLE.disconnect();
 #endif
+}
+
+// ============================================
+// When Bluetooth won't start
+// ============================================
+
+void DFPongController::reportStartFailure() {
+    _startFailed = true;
+    _lastStartHelp = millis();
+    printStartHelp();
+}
+
+void DFPongController::printStartHelp() {
+    Serial.println("DFPong: Bluetooth didn't start, so this controller can't connect.");
+    Serial.println("        (The LED blinks 3 times, then pauses, until this is fixed.)");
+#if defined(ARDUINO_SAMD_NANO_33_IOT) || defined(ARDUINO_UNOR4_WIFI)
+    Serial.println("        Update the board's Bluetooth firmware: in Arduino IDE 2 choose");
+    Serial.println("        Tools > Firmware Updater, pick this board, click Check Updates,");
+    Serial.println("        install the newest firmware, then upload your sketch again.");
+#elif defined(DFPONG_USE_NIMBLE)
+    Serial.println("        Unplug the board and plug it back in. If it keeps happening, check that");
+    Serial.println("        NimBLE-Arduino is version 2.x (Sketch > Include Library > Manage Libraries).");
+#else
+    Serial.println("        Unplug the board, plug it back in and upload your sketch again.");
+#endif
+}
+
+// 3 quick blinks, then a pause: unlike any of the normal patterns
+void DFPongController::blinkStartError(unsigned long now) {
+    if (_statusLedPin < 0) return;
+    unsigned long phase = now % 1400;
+    bool on = phase < 600 && (phase / 100) % 2 == 0;
+    if (on != _ledState) {
+        _ledState = on;
+        digitalWrite(_statusLedPin, on ? HIGH : LOW);
+    }
 }
 
 // ============================================
