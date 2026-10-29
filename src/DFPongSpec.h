@@ -1,6 +1,6 @@
 // Generated from api/dfpong-api.json by api/build.mjs. Edit the spec, not this file.
 //
-// The DFPONG API 1.2: the limits and names the game and this library agree on.
+// The DFPONG API 1.3: the limits and names the game and this library agree on.
 // The game also accepts names this library doesn't know yet, so a newer game can add sounds
 // and music without a new library release.
 
@@ -10,7 +10,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define DFPONG_API_VERSION "1.2"
+#define DFPONG_API_VERSION "1.3"
 #define DFPONG_CONFIG_VERSION 1
 
 namespace DFPongSpec {
@@ -20,6 +20,7 @@ namespace DFPongSpec {
     const char* const MOVEMENT_UUID_BASE = "19b10011-e8f2-537e-4f6c-d104768a12";
     const char* const CONFIG_UUID_BASE = "19b10012-e8f2-537e-4f6c-d104768a12";
     const char* const ACTIONS_UUID_BASE = "19b10013-e8f2-537e-4f6c-d104768a12";
+    const char* const EVENTS_UUID_BASE = "19b10014-e8f2-537e-4f6c-d104768a12";
     const int CONTROLLER_NUMBER_MIN = 1;
     const int CONTROLLER_NUMBER_MAX = 242;
     const size_t CONFIG_MAX_BYTES = 512;
@@ -65,6 +66,20 @@ namespace DFPongSpec {
     const char* const TAUNT_EMOTES[] = { "HA!", "NICE", "GG", "OOPS", "COME ON", "WOW" };
     const size_t TAUNT_EMOTE_COUNT = 6;
     // code 4 is reserved for power (planned)
+
+    // Game events (byte 0 of a packet the game writes to the events characteristic)
+    const size_t EVENTS_MAX_BYTES = 20;
+    const uint8_t EVENT_MATCH_START = 1; // experimental
+    const uint8_t EVENT_COUNTDOWN = 2; // experimental
+    const uint8_t EVENT_HIT = 3; // experimental
+    const uint8_t EVENT_SCORED = 4; // experimental
+    const uint8_t EVENT_CONCEDED = 5; // experimental
+    const uint8_t EVENT_MATCH_POINT = 6; // experimental
+    const uint8_t EVENT_WON = 7; // experimental
+    const uint8_t EVENT_LOST = 8; // experimental
+    const uint8_t EVENT_PAUSED = 9; // experimental
+    const uint8_t EVENT_RESUMED = 10; // experimental
+    const uint8_t EVENT_TAUNTED = 11; // experimental
 
     // Built-in sound names (hitSound, scoreSound, winSound)
     const char* const SOUNDS[] = {

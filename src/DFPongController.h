@@ -52,7 +52,7 @@
 // ============================================
 // Library Version
 // ============================================
-#define DFPONG_CONTROLLER_VERSION "2.4.3"
+#define DFPONG_CONTROLLER_VERSION "2.5.0"
 
 // ============================================
 // Direction Constants
@@ -61,6 +61,31 @@
 const int NEUTRAL = 0;    // No movement / idle
 const int UP = 1;         // Paddle moves up
 const int DOWN = 2;       // Paddle moves down
+
+// ============================================
+// Game events (experimental: the 2026 game, DFPONG API 1.3)
+// What readGameEvent() returns and onGameEvent() receives.
+// ============================================
+enum {
+    NO_EVENT = 0,
+    EVENT_MATCH_START = DFPongSpec::EVENT_MATCH_START,  // a match is starting
+    EVENT_COUNTDOWN = DFPongSpec::EVENT_COUNTDOWN,      // value: 3, 2, 1, then 0 for GO
+    EVENT_HIT = DFPongSpec::EVENT_HIT,                  // your paddle hit the puck; value: puck speed 0-255
+    EVENT_SCORED = DFPongSpec::EVENT_SCORED,            // you scored; value: your score
+    EVENT_CONCEDED = DFPongSpec::EVENT_CONCEDED,        // they scored; value: their score
+    EVENT_MATCH_POINT = DFPongSpec::EVENT_MATCH_POINT,  // value: 1 you can win, 0 they can, 2 next point wins
+    EVENT_WON = DFPongSpec::EVENT_WON,                  // you won the match
+    EVENT_LOST = DFPongSpec::EVENT_LOST,                // you lost the match
+    EVENT_PAUSED = DFPongSpec::EVENT_PAUSED,            // the game paused
+    EVENT_RESUMED = DFPongSpec::EVENT_RESUMED,          // the game resumed
+    EVENT_TAUNTED = DFPongSpec::EVENT_TAUNTED           // the other player taunted you; value: the word (0-5)
+};
+
+// One note for the buzzer: frequency in Hz (0 = silence) and length in milliseconds
+struct DFPongNote {
+    uint16_t frequency;
+    uint16_t ms;
+};
 
 // ============================================
 // Internal Constants (do not modify)
@@ -193,6 +218,50 @@ public:
      * True when the game is listening for actions (the 2026 game).
      */
     bool actionsAvailable();
+    
+    // ----------------------------------------
+    // Game events and a buzzer (experimental: the 2026 game, DFPONG API 1.3)
+    // ----------------------------------------
+    // The game tells your controller what just happened: your paddle hit the
+    // puck, you scored, you won... Play built-in sounds on a piezo buzzer, or
+    // react yourself (an LED, a vibration motor, a servo).
+    
+    /**
+     * Play built-in sounds on a piezo buzzer: a jingle when the controller
+     * starts and when the game connects, a sound when the connection drops,
+     * and a sound for every game event. Sounds never stop your loop().
+     *
+     * @param pin        the buzzer's pin (e.g. 11), or -1 for no buzzer
+     * @param gameSounds false: only the start / connected / dropped sounds
+     *                   and your own playTone() notes
+     */
+    void setBuzzer(int pin, bool gameSounds = true);
+    
+    /**
+     * Play one note on the buzzer, e.g. playTone(880, 100). Doesn't stop your loop().
+     */
+    void playTone(int frequency, int milliseconds);
+    
+    /**
+     * Call your own function for every game event:
+     *     void gameEvent(int event, int value) {
+     *         if (event == EVENT_SCORED) digitalWrite(ledPin, HIGH);
+     *     }
+     *     controller.onGameEvent(gameEvent);   // in setup()
+     * What value means depends on the event (see the EVENT_ list above).
+     */
+    void onGameEvent(void (*handler)(int event, int value));
+    
+    /**
+     * Or ask in loop(): returns the next event (EVENT_SCORED, ...) or NO_EVENT.
+     * gameEventValue() is the value that came with it.
+     */
+    int readGameEvent();
+    int gameEventValue();
+    
+    /** The score as the game last told it (0 until the first point of a match). */
+    int myScore();
+    int theirScore();
     
     // ----------------------------------------
     // Connection Status
@@ -448,12 +517,14 @@ private:
     NimBLECharacteristic* _movementCharacteristic;
     NimBLECharacteristic* _configCharacteristic;
     NimBLECharacteristic* _actionsCharacteristic;
+    NimBLECharacteristic* _eventsCharacteristic;
     NimBLEAdvertising* _pAdvertising;
 #else
     BLEService* _pongService;
     BLEByteCharacteristic* _movementCharacteristic;
     BLECharacteristic* _configCharacteristic;
     BLECharacteristic* _actionsCharacteristic;
+    BLECharacteristic* _eventsCharacteristic;
 #endif
 
     // UUID storage
@@ -461,6 +532,38 @@ private:
     char _characteristicUuid[37];
     char _configUuid[37];
     char _actionsUuid[37];
+    char _eventsUuid[37];
+    
+    // Game events: the Bluetooth side adds them to _incoming, update() handles them.
+    // (On ESP32 the Bluetooth side runs in its own task, hence "volatile".)
+    struct GameEvent {
+        uint8_t code;
+        uint8_t value;
+        uint8_t value2;
+    };
+    static const uint8_t EVENT_QUEUE_SIZE = 8;
+    GameEvent _incoming[EVENT_QUEUE_SIZE];
+    volatile uint8_t _incomingHead;
+    volatile uint8_t _incomingTail;
+    GameEvent _readable[EVENT_QUEUE_SIZE];    // waiting for readGameEvent()
+    uint8_t _readableHead;
+    uint8_t _readableTail;
+    int _lastEventValue;
+    int _myScore;
+    int _theirScore;
+    void (*_eventHandler)(int event, int value);
+    
+    // Buzzer: a melody is played one note at a time by update()
+    int _buzzerPin;
+    bool _gameSounds;
+    const DFPongNote* _melody;
+    uint8_t _melodyLength;
+    uint8_t _melodyIndex;
+    uint8_t _melodyPriority;
+    bool _melodyPlaying;
+    unsigned long _noteEndsAt;
+    DFPongNote _singleNote;
+    bool _soundReady;                     // the "connected" sound has played for this connection
     
     // State written by the BLE event handlers.
     // On ESP32 the handlers run in a separate task, hence "volatile".
@@ -529,6 +632,12 @@ private:
     void writeConfigValue();
     void storeName(const char* caller, const char* name);
     void flushPosition(unsigned long now);
+    void receiveEvent(const uint8_t* data, size_t length);
+    void handleEvents();
+    void eventSound(uint8_t code, uint8_t value);
+    void playMelody(const DFPongNote* notes, uint8_t count, uint8_t priority);
+    void startNote(unsigned long now);
+    void updateBuzzer(unsigned long now);
     void reportStartFailure();
     void printStartHelp();
     void blinkStartError(unsigned long now);
@@ -557,13 +666,16 @@ private:
     class ServerCallbacks;
     class CharacteristicCallbacks;
     class ActionsCallbacks;
+    class EventsCallbacks;
     friend class ServerCallbacks;
     friend class CharacteristicCallbacks;
     friend class ActionsCallbacks;
+    friend class EventsCallbacks;
 #else
     static void onBLEConnected(BLEDevice central);
     static void onBLEDisconnected(BLEDevice central);
     static void onCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic);
+    static void onEventsWritten(BLEDevice central, BLECharacteristic characteristic);
 #endif
 };
 
