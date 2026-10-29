@@ -377,6 +377,66 @@ controller.sendTaunt(2);   // "GG" pops up beside your paddle
 Steering with a knob is one of the two ways to move your paddle: see [Quick Start](#quick-start).
 `08_PositionControl` has both: a knob for steering and a button for taunts.
 
+## Sounds on the Controller (a piezo buzzer)
+
+A piezo buzzer on your controller can give feedback: a jingle when it starts, a sound when the game connects,
+a beep on every button press. Use Arduino's own `tone(pin, frequency, milliseconds)` in your sketch; it works
+with every version of this library. Wire the piezo from a pin (the 2025 Nano controllers use **pin 11**) to GND.
+
+```cpp
+const int BUZZER_PIN = 11;
+bool wasReady = false;
+int lastDirection = NEUTRAL;
+
+// Plays a few notes, one after another (this pauses loop() while it plays, so keep it short)
+void jingle(const int* notes, int count, int ms) {
+  for (int i = 0; i < count; i++) {
+    tone(BUZZER_PIN, notes[i], ms);
+    delay(ms + 20);
+  }
+  noTone(BUZZER_PIN);
+}
+
+void setup() {
+  // ... pins, setControllerNumber(), etc.
+  pinMode(BUZZER_PIN, OUTPUT);
+  const int hello[] = {523, 659, 784};      // C E G: the controller is on
+  jingle(hello, 3, 90);
+
+  controller.begin();
+}
+
+void loop() {
+  controller.update();
+
+  // Two rising notes when the game has connected and is ready
+  bool ready = controller.isReady();
+  if (ready && !wasReady) {
+    const int ok[] = {784, 1047};
+    jingle(ok, 2, 80);
+  }
+  wasReady = ready;
+
+  // read your buttons into direction (UP, DOWN or NEUTRAL), then:
+  int direction = NEUTRAL;
+  // ...
+  controller.sendControl(direction);
+
+  // A short beep when a button is pressed: high for UP, low for DOWN.
+  // tone() with a length doesn't pause loop(), so this is fine every loop.
+  if (direction != lastDirection && direction != NEUTRAL) {
+    tone(BUZZER_PIN, direction == UP ? 1568 : 392, 40);
+  }
+  lastDirection = direction;
+}
+```
+
+- Notes in Hz: C5 = 523, E5 = 659, G5 = 784, C6 = 1047, G6 = 1568, G4 = 392. Higher numbers are higher notes.
+- `tone(pin, frequency, ms)` plays in the background; the `delay()` in `jingle()` is what waits for each note. Keep
+  jingles short (under half a second) so they don't hold up the connection.
+- A *passive* piezo plays any note. An *active* buzzer (it beeps on its own when powered) only makes one sound;
+  use `digitalWrite()` for those.
+
 ## Platform-Specific Notes
 
 ### Arduino UNO R4 WiFi
