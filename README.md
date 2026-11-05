@@ -352,31 +352,6 @@ Where to host your file (free, and the browser is allowed to load from them):
 
 Links from Google Drive, Dropbox, OneDrive or iCloud **don't work** - the browser isn't allowed to load sounds from them.
 
-## In Game Actions (experimental)
-
-*Needs the 2026 game. Experimental: these may still change in a future version.*
-
-Settings describe your controller; **In Game Actions** are things you do during play, sent the moment
-they happen.
-
-```cpp
-controller.sendTaunt(2);   // "GG" pops up beside your paddle
-```
-
-`sendTaunt(n)` shows a word beside your paddle with a ring and a sound (your own hit sound, if you set one):
-
-| `n` | 0 | 1 | 2 | 3 | 4 | 5 |
-|---|---|---|---|---|---|---|
-| Word | HA! | NICE | GG | OOPS | COME ON | WOW |
-
-- The game shows at most one taunt every 2 seconds per player and ignores the rest.
-- The host can turn taunts off with the **In Game Actions** switch.
-- `actionsAvailable()` is true when the game is listening. Older games ignore In Game Actions, and your
-  controller still plays there.
-
-Steering with a knob is one of the two ways to move your paddle: see [Quick Start](#quick-start).
-`08_PositionControl` has both: a knob for steering and a button for taunts.
-
 ## Sounds on the Controller (a piezo buzzer)
 
 A piezo buzzer on your controller can give feedback: a jingle when it starts, a sound when the game connects,
@@ -482,7 +457,6 @@ void loop() {
 | `sendPosition(float position)` | *Experimental.* Steer to a height: 0.0 (top) to 1.0 (bottom) |
 | `sendPosition(long reading, long top, long bottom)` | *Experimental.* Same, from a sensor reading: `top` and `bottom` are the readings for the top and the bottom, e.g. `(analogRead(A0), 0, 1023)` |
 | `stopPosition()` | *Experimental.* Back to `UP` / `DOWN` |
-| `sendTaunt(int emote)` | *Experimental.* A word beside your paddle: 0 HA!, 1 NICE, 2 GG, 3 OOPS, 4 COME ON, 5 WOW |
 | `actionsAvailable()` | True when the game listens for actions (the 2026 game) |
 
 ### Status Methods
@@ -656,7 +630,6 @@ Templates and other ways to control a paddle. Their buttons are on pins 2 and 3:
 | **05_SlotMachine** | Chaotic controller - each button press sends a random direction for a random time |
 | **06_CustomSettings** | Two-button controller with your own name, color, speed, size, sounds and a rule request |
 | **07_LiveSettings** | Change your paddle color live with a potentiometer while you play |
-| **08_PositionControl** | Steer with a knob and taunt with a button (experimental actions) |
 | **09_KnobSteering** | Move your paddle with a knob: the simplest position example |
 
 ## Links

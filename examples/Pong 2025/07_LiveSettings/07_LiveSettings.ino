@@ -31,7 +31,8 @@
  * - Calling a setting with the SAME value again sends nothing, but it's
  *   still good practice to only call it when something really changed
  *   (that's what this example does).
- * - PLAYER settings (name, color, speed, size, sounds) change right away.
+ * - Name, color and sounds change right away. Speed and size wait for the
+ *   next serve (the host can change when these apply).
  *   GAME requests (like requestPointsToWin) apply to the NEXT match.
  *
  * LED STATUS PATTERNS:
