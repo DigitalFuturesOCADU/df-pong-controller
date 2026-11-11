@@ -532,7 +532,10 @@ void setup() {
 ```
 
 Or ask in `loop()`: `int event = controller.readGameEvent();` (`NO_EVENT` when nothing happened), with
-`controller.gameEventValue()` for its value.
+`controller.gameEventValue()` for its value. Up to 7 events wait to be read; after that the oldest are dropped.
+
+Use **one or the other**: once `onGameEvent()` is set, events go to your function and `readGameEvent()` always
+returns `NO_EVENT`. Your function runs inside `controller.update()`, so keep it quick: no `delay()`.
 
 | Event | When | `value` | With `setBuzzer()` |
 |---|---|---|---|
@@ -699,7 +702,7 @@ Some ESP32 boards don't have a built-in LED definition. Use the pin number of yo
 | `setBuzzer(int pin, bool gameSounds = true)` | Built-in sounds on a piezo buzzer; `-1` for none |
 | `playTone(int frequency, int ms)` | Your own note on the buzzer, without stopping `loop()` |
 | `onGameEvent(function)` | Your function `(int event, int value)` runs for every game event |
-| `readGameEvent()` / `gameEventValue()` | The next game event (`NO_EVENT` if none) and its value |
+| `readGameEvent()` / `gameEventValue()` | The next game event (`NO_EVENT` if none) and its value. Always `NO_EVENT` once `onGameEvent()` is set |
 | `myScore()` / `theirScore()` | The score as the game last told it |
 
 ### Status Methods
