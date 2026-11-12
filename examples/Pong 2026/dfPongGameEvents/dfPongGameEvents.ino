@@ -7,7 +7,8 @@ one on a piezo buzzer, and shows how to react yourself (an LED, a motor...).
 
 Pin 32 : UP button (its other leg to GND)
 Pin 33 : DOWN button (its other leg to GND)
-Pin 11 : piezo buzzer (its other leg to GND). Any digital pin works: change buzzerPin.
+Pin 27 : piezo buzzer (its other leg to GND). Any digital pin works: change buzzerPin.
+         (On a 2025 Nano controller, the buzzer is on pin 11.)
 
 Open the Serial Monitor at 9600 baud to see the events as they arrive.
 Needs the 2026 game, the DFPongController library (2.5 or newer) and, on ESP32 boards,
@@ -29,7 +30,7 @@ int downButtonPin = 33;
 int downButtonState;
 
 //Buzzer pin
-int buzzerPin = 11;
+int buzzerPin = 27;
 
 //This runs every time the game sends an event.
 //event: what happened (EVENT_HIT, EVENT_SCORED, ...)

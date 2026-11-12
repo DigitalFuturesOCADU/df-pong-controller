@@ -9,7 +9,7 @@ A beginner-friendly Arduino library for creating Bluetooth Low Energy (BLE) cont
 
 | Version | What it added |
 |---|---|
-| **2.5** | *Experimental.* [A piezo buzzer and game events](#game-events-and-a-buzzer-experimental-25): your board can react to hits, points, match point, winning |
+| **2.5** | *Experimental.* [A piezo buzzer and game events](#game-events-and-a-buzzer-experimental-25): your board can react to hits, points, match point, winning. 2.5.1: the [Game Events examples](#game-events) |
 | **2.4** | `setControllerName()`: [name your controller](#player-settings) from the board. Pong 2026 starter examples. A blink pattern and a message when Bluetooth won't start |
 | **2.3** | [`sendPosition()`](#position-a-knob): steer with a knob or any sensor with a range |
 | **2.1** | [`setMusic()`](#music): background music for your matches |
@@ -551,11 +551,11 @@ returns `NO_EVENT`. Your function runs inside `controller.update()`, so keep it 
 | `EVENT_RESUMED` | the game resumed | | two rising notes |
 
 `controller.myScore()` and `controller.theirScore()` give the score as the game last told it. Older games
-don't send events; everything else still works. See the **dfPongGameEvents** example.
+don't send events; everything else still works. See the [Game Events examples](#game-events).
 
 ## Examples
 
-The examples are in two folders. Open them in Arduino IDE via **File > Examples > DFPongController**.
+The examples are in three folders. Open them in Arduino IDE via **File > Examples > DFPongController**.
 
 ### Pong 2026
 
@@ -565,7 +565,19 @@ The starters for the 2026 game: simple sketches with every customization in `set
 |---------|-------------|
 | **dfPongStarterButtons** | Two buttons on pins 32 and 33 (`INPUT_PULLUP`, no resistors): hold one to move up, the other to move down |
 | **dfPongStarterLight** | An LDR on pin A1 sets the paddle's height with `sendPosition()`: dark is the top, bright the bottom |
-| **dfPongGameEvents** | Buttons plus a piezo buzzer: built-in sounds for every game event, and your own reactions (experimental, 2.5) |
+| **dfPongGameEvents** | Buttons plus a piezo buzzer on pin 27: built-in sounds for every game event, and your own reactions (experimental, 2.5). More in [Game Events](#game-events) |
+
+### Game Events
+
+*Experimental, 2.5 or newer, and the 2026 game.* Each example has the two buttons from **dfPongStarterButtons** and one way to react to [game events](#game-events-and-a-buzzer-experimental-25). Written for the Adafruit Feather ESP32 V2: buttons on pins 32 and 33, buzzer on pin 27. On a 2025 Nano controller, use pins 2 and 3 for the buttons and pin 11 for the buzzer.
+
+| Example | Description |
+|---------|-------------|
+| **01_BuzzerSounds** | One line, `setBuzzer(27)`: a piezo buzzer plays a sound for every event |
+| **02_EventLight** | An LED on pin 15 flashes on hits, blinks when you score, stays on at match point and celebrates when you win. Uses `onGameEvent()`, and times the blinks without `delay()` |
+| **03_Vibration** | A vibration motor on pin 14 (through a transistor) buzzes on every hit, harder for a faster puck |
+| **04_ReadEvents** | `readGameEvent()` in `loop()`: prints every event and the score in the Serial Monitor |
+| **05_OwnSounds** | Your own tunes for each event, with `setBuzzer(27, false)` and `playTone()` |
 
 ### Pong 2025
 

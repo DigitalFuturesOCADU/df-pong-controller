@@ -1,5 +1,22 @@
 # Release Notes
 
+## v2.5.1 - Game Events examples
+
+- New example folder **Game Events** (File > Examples > DFPongController > Game Events), each with two
+  buttons and one way to react to the game:
+  - **01_BuzzerSounds**: `setBuzzer()` plays a sound for every event. One line.
+  - **02_EventLight**: an LED flashes on hits, blinks when you score, stays on at match point, and
+    celebrates when you win, using `onGameEvent()` and timing without `delay()`.
+  - **03_Vibration**: a vibration motor buzzes harder for a faster puck, using the event's value.
+  - **04_ReadEvents**: `readGameEvent()` in `loop()`, printing every event and the score.
+  - **05_OwnSounds**: your own tunes for each event, with `setBuzzer(pin, false)` and `playTone()`.
+- **dfPongGameEvents**: the buzzer moved from pin 11 to pin 27. These examples are written for the
+  Adafruit Feather ESP32 V2, which has no pin 11 (on ESP32 chips, GPIO 11 is usually wired to the flash
+  memory). On a 2025 Nano controller, keep using pin 11.
+- README: `onGameEvent()` and `readGameEvent()` don't mix (once a function is set, `readGameEvent()`
+  returns `NO_EVENT`); up to 7 events wait to be read; keep your event function quick.
+- No change to the library's code.
+
 ## v2.5.0 - Game events and a buzzer (experimental)
 
 Needs the 2026 game (DFPONG API 1.3); older games don't send events and every sketch works as before.
